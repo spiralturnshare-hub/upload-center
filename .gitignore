@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.manus/
+*.log
+.env
+.env.local
+patches/
