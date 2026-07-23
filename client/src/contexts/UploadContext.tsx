@@ -134,6 +134,10 @@ interface UploadContextType {
   isProfileRegistered: boolean;
   isGuestUpload: boolean;
   setIsGuestUpload: (v: boolean) => void;
+  orderId: string;
+  setOrderId: (v: string) => void;
+  orderName: string;
+  setOrderName: (v: string) => void;
 }
 
 const defaultShoeInfo: ShoeInfo = {
@@ -190,6 +194,8 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   const [currentPage, setCurrentPage] = useState('home');
   const [returnToPage, setReturnToPage] = useState('home');
   const [isGuestUpload, setIsGuestUpload] = useState(false);
+  const [orderId, setOrderId] = useState('');
+  const [orderName, setOrderName] = useState('');
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>({
     firstName: '山田',
     lastName: '太郎',
@@ -228,6 +234,8 @@ export function UploadProvider({ children }: { children: ReactNode }) {
       accountProfile, setAccountProfile,
       isProfileRegistered,
       isGuestUpload, setIsGuestUpload,
+      orderId, setOrderId,
+      orderName, setOrderName,
     }}>
       {children}
     </UploadContext.Provider>
