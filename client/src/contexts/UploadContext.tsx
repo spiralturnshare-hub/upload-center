@@ -188,33 +188,14 @@ const UploadContext = createContext<UploadContextType | undefined>(undefined);
 export function UploadProvider({ children }: { children: ReactNode }) {
   const [currentStep, setCurrentStep] = useState<UploadStep>(1);
   const [uploadData, setUploadData] = useState<UploadData>(defaultUploadData);
-  // ===== 開発確認用ダミーデータ（本番前に削除すること） =====
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
-  const [userEmail, setUserEmail] = useState('demo@example.com');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
   const [currentPage, setCurrentPage] = useState('home');
   const [returnToPage, setReturnToPage] = useState('home');
   const [isGuestUpload, setIsGuestUpload] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [orderName, setOrderName] = useState('');
-  const [accountProfile, setAccountProfile] = useState<AccountProfile | null>({
-    firstName: '山田',
-    lastName: '太郎',
-    firstNameKana: 'ヤマダ',
-    lastNameKana: 'タロウ',
-    phone: '090-1234-5678',
-    isOverseas: false,
-    postalCode: '150-0013',
-    prefecture: '東京都',
-    city: '渋谷区恵比寿',
-    address: '1-2-3',
-    building: '恵比寿マンション101号室',
-    country: '',
-    overseasZip: '',
-    overseasState: '',
-    overseasCity: '',
-    overseasAddress: '',
-  });
-  // ===== ダミーデータここまで =====
+  const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
 
   const updateUploadData = (data: Partial<UploadData>) => {
     setUploadData(prev => ({ ...prev, ...data }));
