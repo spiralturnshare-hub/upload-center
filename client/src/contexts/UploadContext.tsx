@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { InsoleKind } from '@/lib/insoleConfig';
+import { supabase } from '@/lib/supabase';
 
 // ============================================================
 // Design: ビビッド・フォーム
@@ -138,6 +139,8 @@ interface UploadContextType {
   setOrderId: (v: string) => void;
   orderName: string;
   setOrderName: (v: string) => void;
+  userId: string | null;
+  initUploadSession: () => string;
 }
 
 const defaultShoeInfo: ShoeInfo = {
@@ -196,9 +199,32 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   const [orderId, setOrderId] = useState('');
   const [orderName, setOrderName] = useState('');
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Supabase Auth のセッションを監視してuserIdを取得
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUserId(data.session?.user?.id ?? null);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? null);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   const updateUploadData = (data: Partial<UploadData>) => {
     setUploadData(prev => ({ ...prev, ...data }));
+  };
+
+  /**
+   * アップロードセッションを初期化する。
+   * 新しいuploadIdをUUIDで生成してContextに設定し、返す。
+   * Step1遷移前（アップロード開始時）に呼び出す。
+   */
+  const initUploadSession = (): string => {
+    const newId = crypto.randomUUID();
+    setUploadData(prev => ({ ...prev, uploadId: newId }));
+    return newId;
   };
 
   const isProfileRegistered = accountProfile !== null &&
@@ -217,6 +243,8 @@ export function UploadProvider({ children }: { children: ReactNode }) {
       isGuestUpload, setIsGuestUpload,
       orderId, setOrderId,
       orderName, setOrderName,
+      userId,
+      initUploadSession,
     }}>
       {children}
     </UploadContext.Provider>

@@ -8,6 +8,8 @@ import AppLayout from '@/components/AppLayout';
 import type { AppLayoutHandle } from '@/components/AppLayout';
 import PinkButton from '@/components/PinkButton';
 import { INSOLE_DISPLAY_NAMES, getRequiredVideoTypes, VIDEO_KIND_LABELS } from '@/lib/insoleConfig';
+import { insertUpload } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 // ============================================================
 // Design: ビビッド・フォーム
@@ -73,11 +75,12 @@ function SectionCard({ icon, title, stepLabel, onEdit, children }: SectionCardPr
 }
 
 export default function Step8ConfirmPage() {
-  const { setCurrentPage, uploadData } = useUpload();
+  const { setCurrentPage, uploadData, userId, orderId, isGuestUpload } = useUpload();
   const {
     customerInfo, shoeInfos, roomColor, painInfo, purposeInfo,
     takoInfo, selectedInsoles,
     videoFiles, footPhotoFiles, shoePhotoFiles,
+    uploadId,
   } = uploadData;
   const [submitting, setSubmitting] = useState(false);
   const layoutRef = useRef<AppLayoutHandle>(null);
@@ -178,9 +181,62 @@ export default function Step8ConfirmPage() {
 
   const handleSubmit = async () => {
     setSubmitting(true);
-    await new Promise(r => setTimeout(r, 1500));
-    setSubmitting(false);
-    setCurrentPage('complete');
+    try {
+      // shoeInfosからFile[]を除外してJSONBに格納可能な形に変換
+      const shoeInfosForDb: Record<string, Omit<typeof shoeInfos[string], 'shoeFiles'>> = {};
+      for (const [kind, info] of Object.entries(shoeInfos)) {
+        const { shoeFiles: _sf, ...rest } = info;
+        shoeInfosForDb[kind] = rest;
+      }
+
+      // painInfoからFile[]を除外
+      const painInfoForDb = {
+        hasPain: painInfo.hasPain,
+        entries: painInfo.entries.map(e => {
+          const { photos: _p, ...rest } = e;
+          return rest;
+        }),
+        side: painInfo.side,
+        strength: painInfo.strength,
+        faceScale: painInfo.faceScale,
+        locations: painInfo.locations,
+        otherLocation: painInfo.otherLocation,
+      };
+
+      // takoInfoからFile[]を除外
+      const takoInfoForDb = {
+        positions: takoInfo.positions,
+        leftPositions: takoInfo.leftPositions,
+        rightPositions: takoInfo.rightPositions,
+        otherNote: takoInfo.otherNote,
+      };
+
+      await insertUpload({
+        id: uploadId,
+        user_id: userId ?? null,
+        order_id: orderId || null,
+        order_name: orderId || null,
+        selected_insoles: selectedInsoles,
+        status: 'submitted',
+        insole_user_name: customerInfo.userName,
+        insole_user_kana: customerInfo.userKana,
+        guest_tf: isGuestUpload,
+        previous_design_tf: false,
+        room_color: roomColor || null,
+        shoe_infos: shoeInfosForDb,
+        pain_info: painInfoForDb,
+        purpose_info: purposeInfo,
+        tako_info: takoInfoForDb,
+        customer_info: customerInfo,
+      });
+
+      setCurrentPage('complete');
+    } catch (err) {
+      console.error('送信エラー:', err);
+      toast.error('送信に失敗しました。再度お試しください。');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

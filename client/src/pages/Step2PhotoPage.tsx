@@ -7,14 +7,14 @@ import PinkButton from '@/components/PinkButton';
 import UploadZone from '@/components/UploadZone';
 import { getRequiredImageTypes, INSOLE_DISPLAY_NAMES } from '@/lib/insoleConfig';
 import { toast } from 'sonner';
+import { uploadFileToStorage, insertUploadFile } from '@/lib/supabase';
 
 // ============================================================
 // Design: ビビッド・フォーム
 // Step2PhotoPage: 画像のアップロード（STEP 2）
 // インソール種別に応じて足の写真・靴の写真を動的に表示
-// foot: 常に表示（ピンク枠のアップロードゾーンは削除）
+// foot: 常に表示
 // shoes: ルーム用以外のインソールが含まれる場合に表示（インソールごと）
-// 撮影方法ボタン: 動画STEPと同じ「撮影方法を確認する」ボタンで統一
 // ============================================================
 
 const SHOOTING_GUIDE_URL = 'https://dataguide.insoleorder.jp/';
@@ -22,8 +22,8 @@ const SHOOTING_GUIDE_URL = 'https://dataguide.insoleorder.jp/';
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
 export default function Step2PhotoPage() {
-  const { setCurrentPage, uploadData, updateUploadData } = useUpload();
-  const { selectedInsoles, footPhotoFiles, footPhotosUploaded, shoePhotoFiles, shoePhotosUploaded } = uploadData;
+  const { setCurrentPage, uploadData, updateUploadData, userId, orderId } = useUpload();
+  const { selectedInsoles, footPhotoFiles, footPhotosUploaded, shoePhotoFiles, shoePhotosUploaded, uploadId } = uploadData;
   const layoutRef = useRef<AppLayoutHandle>(null);
 
   const requiredImageTypes = getRequiredImageTypes(selectedInsoles);
@@ -37,26 +37,74 @@ export default function Step2PhotoPage() {
   const [shoeStatus, setShoeStatus] = useState<Record<string, UploadStatus>>({});
   const [shoeProgress, setShoeProgress] = useState<Record<string, number>>({});
 
-  const simulateUpload = (
-    setStatus: (s: UploadStatus) => void,
-    setProgress: React.Dispatch<React.SetStateAction<number>>,
-    onDone: () => void
-  ) => {
-    setStatus('uploading');
-    setProgress(0);
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        const next = prev + 15;
-        if (next >= 100) {
-          clearInterval(interval);
-          setStatus('success');
-          // setTimeoutで次のレンダリングサイクルに延期して呼び出す
-          setTimeout(() => onDone(), 0);
-          return 100;
-        }
-        return next;
-      });
-    }, 150);
+  /**
+   * 足の写真をStorageにアップロードする
+   */
+  const doUploadFoot = async (files: File[]) => {
+    setFootStatus('uploading');
+    setFootProgress(0);
+    const fakeInterval = setInterval(() => {
+      setFootProgress(prev => Math.min(prev + 8, 90));
+    }, 300);
+    try {
+      for (const file of files) {
+        const fileId = crypto.randomUUID();
+        await uploadFileToStorage(file, uploadId, 'foot', fileId, userId);
+        await insertUploadFile({
+          upload_id: uploadId,
+          order_id: orderId || null,
+          user_id: userId,
+          file_type: 'image',
+          kind: 'foot',
+          url: `${userId ?? 'guest'}/live/${uploadId}/foot/${fileId}/${file.name}`,
+        });
+      }
+      clearInterval(fakeInterval);
+      setFootProgress(100);
+      setFootStatus('success');
+      updateUploadData({ footPhotosUploaded: true });
+    } catch (err) {
+      clearInterval(fakeInterval);
+      console.error('足の写真アップロードエラー:', err);
+      setFootStatus('error');
+      setFootProgress(0);
+      toast.error('足の写真のアップロードに失敗しました。再度お試しください。');
+    }
+  };
+
+  /**
+   * 靴の写真をStorageにアップロードする（インソール種別ごと）
+   */
+  const doUploadShoe = async (insoleKind: string, files: File[]) => {
+    setShoeStatus(prev => ({ ...prev, [insoleKind]: 'uploading' }));
+    setShoeProgress(prev => ({ ...prev, [insoleKind]: 0 }));
+    const fakeInterval = setInterval(() => {
+      setShoeProgress(prev => ({ ...prev, [insoleKind]: Math.min((prev[insoleKind] ?? 0) + 8, 90) }));
+    }, 300);
+    try {
+      for (const file of files) {
+        const fileId = crypto.randomUUID();
+        await uploadFileToStorage(file, uploadId, 'shoe', fileId, userId);
+        await insertUploadFile({
+          upload_id: uploadId,
+          order_id: orderId || null,
+          user_id: userId,
+          file_type: 'image',
+          kind: `shoe_${insoleKind}`,
+          url: `${userId ?? 'guest'}/live/${uploadId}/shoe/${fileId}/${file.name}`,
+        });
+      }
+      clearInterval(fakeInterval);
+      setShoeProgress(prev => ({ ...prev, [insoleKind]: 100 }));
+      setShoeStatus(prev => ({ ...prev, [insoleKind]: 'success' }));
+      updateUploadData({ shoePhotosUploaded: { ...shoePhotosUploaded, [insoleKind]: true } });
+    } catch (err) {
+      clearInterval(fakeInterval);
+      console.error('靴の写真アップロードエラー:', err);
+      setShoeStatus(prev => ({ ...prev, [insoleKind]: 'error' }));
+      setShoeProgress(prev => ({ ...prev, [insoleKind]: 0 }));
+      toast.error('靴の写真のアップロードに失敗しました。再度お試しください。');
+    }
   };
 
   const handleFootFilesChange = (files: File[]) => {
@@ -66,9 +114,7 @@ export default function Step2PhotoPage() {
       setFootProgress(0);
       updateUploadData({ footPhotosUploaded: false });
     } else {
-      simulateUpload(setFootStatus, setFootProgress, () => {
-        updateUploadData({ footPhotosUploaded: true });
-      });
+      doUploadFoot(files);
     }
   };
 
@@ -81,25 +127,7 @@ export default function Step2PhotoPage() {
       updateUploadData({ shoePhotosUploaded: { ...shoePhotosUploaded, [insoleKind]: false } });
       return;
     }
-    if (files.length > 0) {
-      setShoeStatus(prev => ({ ...prev, [insoleKind]: 'uploading' }));
-      setShoeProgress(prev => ({ ...prev, [insoleKind]: 0 }));
-      const interval = setInterval(() => {
-        setShoeProgress(prev => {
-          const next = (prev[insoleKind] ?? 0) + 15;
-          if (next >= 100) {
-            clearInterval(interval);
-            setShoeStatus(s => ({ ...s, [insoleKind]: 'success' }));
-            // setTimeoutで次のレンダリングサイクルに延期して呼び出す
-            setTimeout(() => {
-              updateUploadData({ shoePhotosUploaded: { ...shoePhotosUploaded, [insoleKind]: true } });
-            }, 0);
-            return { ...prev, [insoleKind]: 100 };
-          }
-          return { ...prev, [insoleKind]: next };
-        });
-      }, 150);
-    }
+    doUploadShoe(insoleKind, files);
   };
 
   // 全ての必要な写真がアップロード済みかチェック

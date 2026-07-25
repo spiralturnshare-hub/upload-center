@@ -11,6 +11,7 @@ import {
 } from '@/lib/insoleConfig';
 import type { VideoKind } from '@/lib/insoleConfig';
 import { toast } from 'sonner';
+import { uploadFileToStorage, insertUploadFile } from '@/lib/supabase';
 
 // ============================================================
 // Design: ビビッド・フォーム
@@ -20,8 +21,8 @@ import { toast } from 'sonner';
 const SHOOTING_GUIDE_URL = 'https://dataguide.insoleorder.jp/';
 
 export default function Step1VideoPage() {
-  const { setCurrentPage, uploadData, updateUploadData } = useUpload();
-  const { selectedInsoles, videoFiles, videoUploaded } = uploadData;
+  const { setCurrentPage, uploadData, updateUploadData, userId, orderId } = useUpload();
+  const { selectedInsoles, videoFiles, videoUploaded, uploadId } = uploadData;
   const layoutRef = useRef<AppLayoutHandle>(null);
 
   // 選択されたインソール種別から必要な動画種別を取得
@@ -42,28 +43,51 @@ export default function Step1VideoPage() {
       setUploadProgress(prev => ({ ...prev, [kind]: 0 }));
       updateUploadData({ videoUploaded: { ...videoUploaded, [kind]: false } });
     } else {
-      simulateUpload(kind);
+      doUpload(kind, files[0]);
     }
   };
 
-  const simulateUpload = (kind: VideoKind) => {
+  /**
+   * Supabase Storage（upsys）への実際のアップロード処理
+   * ファイルパス: {userId}/live/{uploadId}/{kind}/{fileId}/{filename}
+   */
+  const doUpload = async (kind: VideoKind, file: File) => {
     setUploadStatus(prev => ({ ...prev, [kind]: 'uploading' }));
     setUploadProgress(prev => ({ ...prev, [kind]: 0 }));
-    const interval = setInterval(() => {
+
+    // プログレスバーをアニメーション（実際のアップロードは非同期）
+    const fakeInterval = setInterval(() => {
       setUploadProgress(prev => {
-        const next = prev[kind] + 10;
-        if (next >= 100) {
-          clearInterval(interval);
-          setUploadStatus(s => ({ ...s, [kind]: 'success' }));
-          // setTimeoutで次のレンダリングサイクルに延期して呼び出す
-          setTimeout(() => {
-            updateUploadData({ videoUploaded: { ...videoUploaded, [kind]: true } });
-          }, 0);
-          return { ...prev, [kind]: 100 };
-        }
+        const next = Math.min(prev[kind] + 5, 90);
         return { ...prev, [kind]: next };
       });
-    }, 200);
+    }, 300);
+
+    try {
+      const fileId = crypto.randomUUID();
+      await uploadFileToStorage(file, uploadId, kind, fileId, userId);
+
+      // uploads_files テーブルにメタデータを記録
+      await insertUploadFile({
+        upload_id: uploadId,
+        order_id: orderId || null,
+        user_id: userId,
+        file_type: 'video',
+        kind,
+        url: `${userId ?? 'guest'}/live/${uploadId}/${kind}/${fileId}/${file.name}`,
+      });
+
+      clearInterval(fakeInterval);
+      setUploadProgress(prev => ({ ...prev, [kind]: 100 }));
+      setUploadStatus(prev => ({ ...prev, [kind]: 'success' }));
+      updateUploadData({ videoUploaded: { ...videoUploaded, [kind]: true } });
+    } catch (err) {
+      clearInterval(fakeInterval);
+      console.error('動画アップロードエラー:', err);
+      setUploadStatus(prev => ({ ...prev, [kind]: 'error' }));
+      setUploadProgress(prev => ({ ...prev, [kind]: 0 }));
+      toast.error('動画のアップロードに失敗しました。再度お試しください。');
+    }
   };
 
   // 次へボタンの有効条件：全動画アップロード済み
@@ -203,3 +227,4 @@ function VideoUploadCard({
     </div>
   );
 }
+

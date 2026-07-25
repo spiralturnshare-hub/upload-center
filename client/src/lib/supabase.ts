@@ -67,3 +67,62 @@ export async function verifyOrderByPaymentId(paymentId: string, email: string) {
   if (error) return null;
   return data;
 }
+
+// ============================================================
+// Storage: upsys バケットへのファイルアップロード
+// パス形式: {userId}/live/{uploadId}/{kind}/{fileId}/{filename}
+// ============================================================
+
+/**
+ * ファイルをupsysバケットにアップロードし、storageパスを返す
+ * userId が null の場合（ゲスト）は "guest" を使用
+ */
+export async function uploadFileToStorage(
+  file: File,
+  uploadId: string,
+  kind: string,
+  fileId: string,
+  userId: string | null
+): Promise<{ path: string; url: string }> {
+  const userSegment = userId ?? 'guest';
+  const ext = file.name.split('.').pop() ?? '';
+  const filename = ext ? `${fileId}.${ext}` : fileId;
+  const storagePath = `${userSegment}/live/${uploadId}/${kind}/${fileId}/${filename}`;
+
+  const { error } = await supabase.storage
+    .from('upsys')
+    .upload(storagePath, file, { upsert: false });
+
+  if (error) throw error;
+
+  const { data: urlData } = supabase.storage
+    .from('upsys')
+    .getPublicUrl(storagePath);
+
+  return { path: storagePath, url: urlData.publicUrl };
+}
+
+// ============================================================
+// uploads_files テーブル: ファイルメタデータ INSERT
+// ============================================================
+export async function insertUploadFile(record: {
+  upload_id: string;
+  order_id: string | null;
+  user_id: string | null;
+  file_type: string;   // 'video' | 'image'
+  kind: string;        // 'walk' | 'foot' | 'shoe' | etc.
+  url: string;
+  status?: string;
+}) {
+  const { data, error } = await supabase
+    .from('uploads_files')
+    .insert({
+      ...record,
+      status: record.status ?? 'uploaded',
+      updated_at: new Date().toISOString(),
+    })
+    .select('id')
+    .single();
+  if (error) throw error;
+  return data;
+}

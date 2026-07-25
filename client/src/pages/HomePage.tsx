@@ -61,7 +61,7 @@ function OrderCard({ icon, title, subtitle, count, onClick }: OrderCardProps) {
 }
 
 export default function HomePage() {
-  const { isLoggedIn, setIsLoggedIn, setCurrentPage, uploadData, updateUploadData, accountProfile, isProfileRegistered } = useUpload();
+  const { isLoggedIn, setIsLoggedIn, setCurrentPage, uploadData, updateUploadData, accountProfile, isProfileRegistered, initUploadSession } = useUpload();
   const [showInsoleSelector, setShowInsoleSelector] = useState(false);
   const [showPreShootingDialog, setShowPreShootingDialog] = useState(false);
 
@@ -79,6 +79,7 @@ export default function HomePage() {
 
   const handlePreShootingConfirm = () => {
     setShowPreShootingDialog(false);
+    initUploadSession();
     setCurrentPage('step1');
   };
 
