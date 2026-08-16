@@ -9,6 +9,7 @@ import type { AppLayoutHandle } from '@/components/AppLayout';
 import PinkButton from '@/components/PinkButton';
 import { INSOLE_DISPLAY_NAMES, getRequiredVideoTypes, VIDEO_KIND_LABELS } from '@/lib/insoleConfig';
 import { insertUpload } from '@/lib/supabase';
+import { notifyUploadCompleted } from '@/lib/makeNotify';
 import { toast } from 'sonner';
 
 // ============================================================
@@ -75,7 +76,10 @@ function SectionCard({ icon, title, stepLabel, onEdit, children }: SectionCardPr
 }
 
 export default function Step8ConfirmPage() {
-  const { setCurrentPage, uploadData, userId, orderId, isGuestUpload } = useUpload();
+  const {
+    setCurrentPage, uploadData, userId, orderId, orderName,
+    isGuestUpload, userEmail,
+  } = useUpload();
   const {
     customerInfo, shoeInfos, roomColor, painInfo, purposeInfo,
     takoInfo, selectedInsoles,
@@ -228,6 +232,23 @@ export default function Step8ConfirmPage() {
         purpose_info: purposeInfo,
         tako_info: takoInfoForDb,
         customer_info: customerInfo,
+      });
+
+      // Make へアップロード完了を通知する。
+      // 環境変数 VITE_MAKE_UPLOAD_COMPLETED_WEBHOOK_URL が未設定の場合は
+      // 何も送信されない。通知の成否は画面遷移に影響させない。
+      await notifyUploadCompleted({
+        target: 'upload',
+        type: 'completed',
+        id: uploadId,
+        order_id: orderId || '',
+        order_name: orderName || orderId || '',
+        email: userEmail || '',
+        name: customerInfo.userName,
+        name_kana: customerInfo.userKana,
+        insoles: selectedInsoles,
+        guest: isGuestUpload,
+        upload_user_id: userId ?? '',
       });
 
       setCurrentPage('complete');
