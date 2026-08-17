@@ -8,7 +8,7 @@ import AppLayout from '@/components/AppLayout';
 import type { AppLayoutHandle } from '@/components/AppLayout';
 import PinkButton from '@/components/PinkButton';
 import { INSOLE_DISPLAY_NAMES, getRequiredVideoTypes, VIDEO_KIND_LABELS } from '@/lib/insoleConfig';
-import { insertUpload } from '@/lib/supabase';
+import { insertUpload, fetchOrderAgencyInfo } from '@/lib/supabase';
 import { notifyUploadCompleted } from '@/lib/makeNotify';
 import { toast } from 'sonner';
 
@@ -237,6 +237,12 @@ export default function Step8ConfirmPage() {
       // Make へアップロード完了を通知する。
       // 環境変数 VITE_MAKE_UPLOAD_COMPLETED_WEBHOOK_URL が未設定の場合は
       // 何も送信されない。通知の成否は画面遷移に影響させない。
+      //
+      // 取扱店向けメールの送信条件（Make 側フィルタ）を満たすため、
+      // agency_flg・organization_email・company を注文から取得して送る。
+      // 取得に失敗した場合も既定値で通知され、顧客向けメールは届く。
+      const agencyInfo = await fetchOrderAgencyInfo(orderId || '');
+
       await notifyUploadCompleted({
         target: 'upload',
         type: 'completed',
@@ -249,6 +255,11 @@ export default function Step8ConfirmPage() {
         insoles: selectedInsoles,
         guest: isGuestUpload,
         upload_user_id: userId ?? '',
+        agency_flg: agencyInfo.agencyFlg ? 'true' : 'false',
+        organization_email: agencyInfo.organizationEmail,
+        company: agencyInfo.companyName,
+        item_1: selectedInsoles[0] ?? '',
+        item_2: selectedInsoles[1] ?? '',
       });
 
       setCurrentPage('complete');

@@ -11,9 +11,10 @@
 //   Green: https://hook.eu1.make.com/38ajycmiheco14939dz4edlvcfqfpplf
 //
 // 設計方針：
-//   UI が保持している情報のみを送る。取扱店情報（organization_id、
-//   organization_email、company、agency_flg）は UI が持っていないため、
-//   Make 側が order_id をキーに Supabase から取得する。
+//   取扱店向けメールは Make 側のフィルタで
+//     type = "completed" かつ agency_flg = "true" かつ organization_email ≠ 空
+//   を要求する。Green の upload_completed シナリオは Supabase 取得モジュールを
+//   持たないため、これらは UI 側が注文から取得して送る。
 //
 // 通知の失敗はアップロード自体を失敗させない。Supabase への保存は
 // 既に完了しているため、通知が届かなくてもデータ欠損は起きない。
@@ -46,6 +47,20 @@ export interface UploadCompletedPayload {
   guest: boolean;
   /** ログイン中の利用者ID。ゲストの場合は空文字 */
   upload_user_id: string;
+  /**
+   * 取扱店経由の注文かどうか。
+   * Make のフィルタが text:equal で "true" と比較しているため、
+   * 真偽値ではなく文字列で送る必要がある。
+   */
+  agency_flg: 'true' | 'false';
+  /** 取扱店の連絡先メールアドレス。空文字の場合は取扱店向けメールは送信されない */
+  organization_email: string;
+  /** 取扱店（またはブランド）の会社名。メール本文に差し込まれる */
+  company: string;
+  /** Make 側がインソール種別として参照する（1件目） */
+  item_1: string;
+  /** Make 側がインソール種別として参照する（2件目）。無い場合は空文字 */
+  item_2: string;
 }
 
 /** 送信先が設定されているかどうか */

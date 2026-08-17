@@ -69,6 +69,71 @@ export async function verifyOrderByPaymentId(paymentId: string, email: string) {
 }
 
 // ============================================================
+// 取扱店（OEM先）情報の取得
+//
+// Make の upload_completed シナリオは、取扱店向けメールを送るために
+// 次の3項目を必要とする（フィルタ条件および本文で使用）。
+//   agency_flg         … orders.agency_flg
+//   organization_email … organization.customer_contact_email
+//   company            … organization.company_name
+//
+// これらは UI の状態として保持していないため、通知の直前に取得する。
+// 取得に失敗しても例外は投げない。顧客向けメールは送信されるべきなので、
+// 通知処理そのものを中断させてはならない。
+// ============================================================
+export interface OrderAgencyInfo {
+  /** 取扱店経由の注文かどうか */
+  agencyFlg: boolean;
+  /** 取扱店の連絡先メールアドレス。無い場合は空文字 */
+  organizationEmail: string;
+  /** 取扱店（またはブランド）の会社名。無い場合は空文字 */
+  companyName: string;
+}
+
+/**
+ * 注文IDから取扱店情報を取得する。
+ * 失敗時は既定値（agencyFlg=false、他は空文字）を返す。
+ */
+export async function fetchOrderAgencyInfo(
+  orderId: string
+): Promise<OrderAgencyInfo> {
+  const fallback: OrderAgencyInfo = {
+    agencyFlg: false,
+    organizationEmail: '',
+    companyName: '',
+  };
+  if (!orderId) return fallback;
+
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select(
+        'agency_flg, organization:organization_id (company_name, customer_contact_email)'
+      )
+      .eq('id', orderId)
+      .maybeSingle();
+
+    if (error || !data) return fallback;
+
+    // Supabase の外部キー展開はリレーションの形によりオブジェクトか配列で返る
+    const row = data as Record<string, unknown>;
+    const rawOrg = row.organization;
+    const org = (Array.isArray(rawOrg) ? rawOrg[0] : rawOrg) as
+      | { company_name?: string | null; customer_contact_email?: string | null }
+      | null
+      | undefined;
+
+    return {
+      agencyFlg: Boolean(row.agency_flg),
+      organizationEmail: org?.customer_contact_email ?? '',
+      companyName: org?.company_name ?? '',
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+// ============================================================
 // Storage: upsys バケットへのファイルアップロード
 // パス形式: {userId}/live/{uploadId}/{kind}/{fileId}/{filename}
 // ============================================================
