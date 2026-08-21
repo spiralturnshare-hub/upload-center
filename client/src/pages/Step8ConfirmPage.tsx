@@ -186,6 +186,25 @@ export default function Step8ConfirmPage() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
+      // ------------------------------------------------------------
+      // 送信前ガード：user_id が取得できていない場合は保存しない。
+      //
+      // 本アプリはログイン必須（Email OTP）であり、userId は
+      // Supabase Auth のセッションから取得される。
+      // ここで null のまま保存すると、Green Supabase の RLS
+      // （uploads_select_own : user_id = auth.uid()）により
+      // 保存した本人ですら自分のアップロードを閲覧できなくなる。
+      // 復旧には管理者による手作業が必要になるため、
+      // 保存する前に停止して再サインインを促す。
+      // ------------------------------------------------------------
+      if (!userId) {
+        toast.error(
+          'ログイン情報を確認できませんでした。お手数ですが再度サインインしてください。'
+        );
+        setSubmitting(false);
+        return;
+      }
+
       // shoeInfosからFile[]を除外してJSONBに格納可能な形に変換
       const shoeInfosForDb: Record<string, Omit<typeof shoeInfos[string], 'shoeFiles'>> = {};
       for (const [kind, info] of Object.entries(shoeInfos)) {
@@ -217,7 +236,9 @@ export default function Step8ConfirmPage() {
 
       await insertUpload({
         id: uploadId,
-        user_id: userId ?? null,
+        // 上のガードにより userId は必ず非 null。
+        // RLS が user_id = auth.uid() で判定するため null を入れてはならない。
+        user_id: userId,
         order_id: orderId || null,
         order_name: orderId || null,
         selected_insoles: selectedInsoles,
@@ -254,7 +275,7 @@ export default function Step8ConfirmPage() {
         name_kana: customerInfo.userKana,
         insoles: selectedInsoles,
         guest: isGuestUpload,
-        upload_user_id: userId ?? '',
+        upload_user_id: userId,
         agency_flg: agencyInfo.agencyFlg ? 'true' : 'false',
         organization_email: agencyInfo.organizationEmail,
         company: agencyInfo.companyName,
