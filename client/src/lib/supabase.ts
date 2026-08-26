@@ -134,6 +134,112 @@ export async function fetchOrderAgencyInfo(
 }
 
 // ============================================================
+// 顧客によるデータ修正・追加(改訂履歴ポリシー対応)
+// 方針: docs/10-customer-mgmt-console-vision-and-data-revision-policy.md (spiralturn-green-integration)
+// 顧客は「作製アクション(計測・動作分析)が開始される前」までのみ修正可能。
+// 開始後はcustomer-mgmt-console側(スタッフ)のみ修正可能。
+// 上書き・削除はせず、update_upload_with_history/replace_upload_file(RPC)経由で
+// 変更前スナップショットを必ず残してから更新する。
+// ============================================================
+export interface UploadFullRecord {
+  id: string;
+  order_id: string | null;
+  user_id: string | null;
+  organization_id: string | null;
+  order_name: string | null;
+  selected_insoles: string[] | null;
+  status: string | null;
+  insole_user_name: string | null;
+  insole_user_kana: string | null;
+  room_color: string | null;
+  shoe_infos: Record<string, unknown> | null;
+  pain_info: Record<string, unknown> | null;
+  purpose_info: Record<string, unknown> | null;
+  tako_info: Record<string, unknown> | null;
+  customer_info: Record<string, unknown> | null;
+}
+
+/** 注文IDに紐づく既存のアップロードを取得(無ければnull。初回アップロードかどうかの判定に使う) */
+export async function fetchUploadByOrderId(orderId: string): Promise<UploadFullRecord | null> {
+  const { data, error } = await supabase
+    .from('uploads')
+    .select('*')
+    .eq('order_id', orderId)
+    .maybeSingle();
+  if (error) return null;
+  return data as UploadFullRecord | null;
+}
+
+/**
+ * 修正可否の判定。production_workflowsのmeasure_doneまたはanaly_doneが
+ * 立っていれば「作製アクション開始済み」とみなし、顧客側の修正を禁止する。
+ */
+export async function canCustomerEditUpload(uploadId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('production_workflows')
+    .select('measure_done, analy_done')
+    .eq('upload_id', uploadId)
+    .maybeSingle();
+  if (error || !data) return true; // 工程レコードが無ければ未着手なので修正可
+  return !(data.measure_done || data.analy_done);
+}
+
+export async function fetchCurrentUploadFiles(uploadId: string): Promise<
+  { id: string; kind: string | null; file_type: string | null; url: string | null; updated_at: string | null }[]
+> {
+  const { data, error } = await supabase
+    .from('uploads_files')
+    .select('id, kind, file_type, url, updated_at')
+    .eq('upload_id', uploadId)
+    .eq('is_current', true)
+    .order('updated_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** uploadsを顧客として更新する唯一の正式な経路(RPC経由、変更前スナップショットを自動保存) */
+export async function updateUploadAsCustomer(
+  uploadId: string,
+  patch: Partial<
+    Pick<UploadFullRecord, 'insole_user_name' | 'insole_user_kana' | 'room_color' | 'shoe_infos' | 'pain_info' | 'purpose_info' | 'tako_info' | 'customer_info'>
+  >,
+  userId: string | null,
+  reason?: string
+): Promise<UploadFullRecord> {
+  const { data, error } = await supabase.rpc('update_upload_with_history', {
+    p_upload_id: uploadId,
+    p_patch: patch,
+    p_changed_by_type: 'customer',
+    p_changed_by_id: userId,
+    p_change_reason: reason ?? null,
+  });
+  if (error) throw error;
+  return data as UploadFullRecord;
+}
+
+/** 写真・動画を顧客として差し替える唯一の正式な経路(RPC経由、旧ファイルはis_current=falseで保持) */
+export async function replaceUploadFileAsCustomer(params: {
+  uploadId: string;
+  orderId: string | null;
+  userId: string | null;
+  kind: string;
+  fileType: string;
+  url: string;
+}): Promise<void> {
+  const { error } = await supabase.rpc('replace_upload_file', {
+    p_upload_id: params.uploadId,
+    p_order_id: params.orderId,
+    p_user_id: params.userId,
+    p_kind: params.kind,
+    p_file_type: params.fileType,
+    p_url: params.url,
+    p_changed_by_type: 'customer',
+    p_changed_by_id: params.userId,
+  });
+  if (error) throw error;
+}
+
+// ============================================================
 // Storage: upsys バケットへのファイルアップロード
 // パス形式: {userId}/live/{uploadId}/{kind}/{fileId}/{filename}
 // ============================================================

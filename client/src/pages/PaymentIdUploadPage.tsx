@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
+import { fetchUploadByOrderId } from '@/lib/supabase';
 
 const ERROR_BORDER = '#F97316';
 const ERROR_BG = '#FFF7ED';
@@ -21,6 +22,7 @@ export default function PaymentIdUploadPage() {
   const [error, setError] = useState('');
   const [fieldError, setFieldError] = useState(false);
   const [orderInfo, setOrderInfo] = useState<{ name: string; insoleType: string } | null>(null);
+  const [hasExistingUpload, setHasExistingUpload] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const scrollToTop = () => {
@@ -56,6 +58,9 @@ export default function PaymentIdUploadPage() {
         setOrderInfo({ name: name || '（名前未設定）', insoleType });
         if (setOrderId) setOrderId(data.id);
         if (setOrderName) setOrderName(data.order_name ?? trimmed);
+        // 既にアップロード済みデータがあるか確認(あれば「修正する」導線に切り替える)
+        const existing = await fetchUploadByOrderId(data.id);
+        setHasExistingUpload(!!existing);
         setIsConfirmed(true);
       }
     } catch {
@@ -67,7 +72,7 @@ export default function PaymentIdUploadPage() {
 
   const handleStartUpload = () => {
     scrollToTop();
-    setCurrentPage('step1');
+    setCurrentPage(hasExistingUpload ? 'edit-upload' : 'step1');
   };
 
   return (
@@ -136,7 +141,7 @@ export default function PaymentIdUploadPage() {
               </div>
             </div>
             <Button onClick={handleStartUpload} className="w-full" style={{ backgroundColor: '#D62598' }}>
-              アップロードを開始する
+              {hasExistingUpload ? 'アップロード内容を確認・修正する' : 'アップロードを開始する'}
             </Button>
           </div>
         )}
