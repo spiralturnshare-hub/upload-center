@@ -40,8 +40,8 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
 - 戻し方: Vercel Deployments で CP1(`upload-center-fsvky1dkb`)を Promote to Production。
 
 ### CP3 (2026-08-27 アップロード不能を解消:uploads 行の先行作成 + 顧客ID解決)
-- コミット: `<push後hash>`
-- Vercel Production: `<push後デプロイ>`(公開URL `https://upload-center-murex.vercel.app`)
+- コミット: `d2ee71e`("fix: アップロード不能を解消(uploads 行の先行作成 + 顧客ID解決 + enum/kind是正)")
+- Vercel Production: `upload-center-jqkgvtuf5`(公開URL `https://upload-center-murex.vercel.app`)
 - 症状: 動画/画像をアップロードすると必ず「失敗しました」。Step2 へ進めず foot-guidance 連携も試せない。Green で `uploads_files` = 0 行(`upsys` に孤児2件)。
 - 原因(3層。詳細は spiralturn-green-integration/docs/18・20、migration 008 ヘッダ):
   1. `uploads_files.upload_id → uploads.id` は FK(CASCADE)だが、親 `uploads` 行を Step8 でしか作っていなかった → Step1〜7 の INSERT が全て FK 違反。
