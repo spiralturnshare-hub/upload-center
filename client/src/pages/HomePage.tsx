@@ -6,6 +6,7 @@ import InsoleSelector from '@/components/InsoleSelector';
 import PreShootingDialog from '@/components/PreShootingDialog';
 import type { InsoleKind } from '@/lib/insoleConfig';
 import { INSOLE_DISPLAY_NAMES } from '@/lib/insoleConfig';
+import { toast } from 'sonner';
 
 // ============================================================
 // Design: ビビッド・フォーム
@@ -77,10 +78,15 @@ export default function HomePage() {
     setShowPreShootingDialog(true);
   };
 
-  const handlePreShootingConfirm = () => {
+  const handlePreShootingConfirm = async () => {
     setShowPreShootingDialog(false);
-    initUploadSession();
-    setCurrentPage('step1');
+    try {
+      // uploadId 生成 + uploads 行を draft で先に作成(FK対策)
+      await initUploadSession({ selectedInsoles: uploadData.selectedInsoles });
+      setCurrentPage('step1');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'アップロードの開始に失敗しました。再ログインしてお試しください。');
+    }
   };
 
   const handleGuestUpload = () => {

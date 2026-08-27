@@ -10,12 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/lib/supabase';
 import { fetchUploadByOrderId } from '@/lib/supabase';
+import { toast } from 'sonner';
+import type { InsoleKind } from '@/lib/insoleConfig';
 
 const ERROR_BORDER = '#F97316';
 const ERROR_BG = '#FFF7ED';
 
 export default function PaymentIdUploadPage() {
-  const { setCurrentPage, setOrderId, setOrderName } = useUpload();
+  const { setCurrentPage, setOrderId, setOrderName, initUploadSession } = useUpload();
   const [paymentId, setPaymentId] = useState('');
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,6 +25,8 @@ export default function PaymentIdUploadPage() {
   const [fieldError, setFieldError] = useState(false);
   const [orderInfo, setOrderInfo] = useState<{ name: string; insoleType: string } | null>(null);
   const [hasExistingUpload, setHasExistingUpload] = useState(false);
+  // 照合できた注文の情報(アップロード開始時に uploads 行へ渡す)
+  const [confirmedOrder, setConfirmedOrder] = useState<{ id: string; name: string; insoles: InsoleKind[] } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const scrollToTop = () => {
@@ -54,8 +58,10 @@ export default function PaymentIdUploadPage() {
         setFieldError(true);
       } else {
         const name = `${data.customer_last_name ?? ''}${data.customer_first_name ?? ''}`;
-        const insoleType = [data.insole1_kind, data.insole2_kind].filter(Boolean).join(' + ') || '未設定';
+        const insoleKinds = [data.insole1_kind, data.insole2_kind].filter(Boolean) as InsoleKind[];
+        const insoleType = insoleKinds.join(' + ') || '未設定';
         setOrderInfo({ name: name || '（名前未設定）', insoleType });
+        setConfirmedOrder({ id: data.id, name: data.order_name ?? trimmed, insoles: insoleKinds });
         if (setOrderId) setOrderId(data.id);
         if (setOrderName) setOrderName(data.order_name ?? trimmed);
         // 既にアップロード済みデータがあるか確認(あれば「修正する」導線に切り替える)
@@ -70,9 +76,23 @@ export default function PaymentIdUploadPage() {
     }
   };
 
-  const handleStartUpload = () => {
+  const handleStartUpload = async () => {
     scrollToTop();
-    setCurrentPage(hasExistingUpload ? 'edit-upload' : 'step1');
+    if (hasExistingUpload) {
+      setCurrentPage('edit-upload');
+      return;
+    }
+    try {
+      // 新規アップロード: uploadId 生成 + uploads 行を draft で先に作成(FK対策)
+      await initUploadSession({
+        orderId: confirmedOrder?.id,
+        orderName: confirmedOrder?.name,
+        selectedInsoles: confirmedOrder?.insoles ?? [],
+      });
+      setCurrentPage('step1');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'アップロードの開始に失敗しました。再ログインしてお試しください。');
+    }
   };
 
   return (

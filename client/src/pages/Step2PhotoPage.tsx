@@ -71,7 +71,7 @@ export default function Step2PhotoPage() {
       console.error('足の写真アップロードエラー:', err);
       setFootStatus('error');
       setFootProgress(0);
-      toast.error('足の写真のアップロードに失敗しました。再度お試しください。');
+      toast.error(`足の写真のアップロードに失敗しました: ${err instanceof Error ? err.message : '不明なエラー'}`);
     }
   };
 
@@ -91,9 +91,11 @@ export default function Step2PhotoPage() {
         await insertUploadFile({
           upload_id: uploadId,
           order_id: orderId || null,
-          user_id: userId,
           file_type: 'image',
-          kind: `shoe_${insoleKind}`,
+          // file_kind enum に 'shoe_walk' 等は無い。kind は 'shoes' 固定にし、
+          // どのインソール用の靴かは insole_sku 列に持たせる(uploads_files.insole_sku)。
+          kind: 'shoes',
+          insole_sku: insoleKind,
           url: `${userId ?? 'guest'}/live/${uploadId}/shoe/${fileId}/${file.name}`,
         });
       }
@@ -106,7 +108,7 @@ export default function Step2PhotoPage() {
       console.error('靴の写真アップロードエラー:', err);
       setShoeStatus(prev => ({ ...prev, [insoleKind]: 'error' }));
       setShoeProgress(prev => ({ ...prev, [insoleKind]: 0 }));
-      toast.error('靴の写真のアップロードに失敗しました。再度お試しください。');
+      toast.error(`靴の写真のアップロードに失敗しました: ${err instanceof Error ? err.message : '不明なエラー'}`);
     }
   };
 

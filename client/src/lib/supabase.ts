@@ -43,6 +43,78 @@ export async function insertUpload(upload: Record<string, unknown>) {
   return data;
 }
 
+// ============================================================
+// 顧客ID(public.users.id)をセッションから解決する
+//   uploads.user_id / uploads_files 系の FK は public.users.id を指す(auth.uid() ではない)。
+//   migration 008 のトリガーで、ログイン済みユーザーには必ず public.users 行が存在する。
+//   RLS users_select_own(auth.uid() = auth_user_id)で自分の行だけ引ける。
+// ============================================================
+export async function fetchMyCustomerId(): Promise<string | null> {
+  const { data: sess } = await supabase.auth.getSession();
+  const authUid = sess.session?.user?.id;
+  if (!authUid) return null;
+  const { data, error } = await supabase
+    .from('users')
+    .select('id')
+    .eq('auth_user_id', authUid)
+    .maybeSingle();
+  if (error) {
+    console.error('public.users 解決エラー:', error);
+    return null;
+  }
+  return data?.id ?? null;
+}
+
+// ============================================================
+// アップロード開始時に uploads 行を draft で先に作る
+//   従来は Step8 でしか作っておらず、Step1〜7 の uploads_files INSERT が
+//   FK(uploads_files.upload_id → uploads.id)違反で全て失敗していた。
+//   RLS uploads_insert_own が user_id ∈ 自分の public.users.id を要求するため、
+//   customerId(= public.users.id)を必ず入れる。
+//   冪等: 同じ id で再実行しても upsert で重複を作らない。
+// ============================================================
+export async function ensureUploadRow(params: {
+  uploadId: string;
+  customerId: string | null;
+  orderId: string | null;
+  orderName: string | null;
+  selectedInsoles: string[];
+  isGuest: boolean;
+}) {
+  const { uploadId, customerId, orderId, orderName, selectedInsoles, isGuest } = params;
+  if (!customerId) {
+    throw new Error('顧客情報(public.users)が取得できませんでした。再ログインしてください。');
+  }
+  const { error } = await supabase
+    .from('uploads')
+    .upsert(
+      {
+        id: uploadId,
+        user_id: customerId,
+        order_id: orderId,
+        order_name: orderName,
+        selected_insoles: selectedInsoles ?? [],
+        guest_tf: isGuest,
+        status: 'draft',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id', ignoreDuplicates: true },
+    );
+  if (error) throw error;
+}
+
+// uploads 行の本更新(Step8 の確定時。従来 insertUpload していたのを update へ)
+export async function updateUpload(id: string, fields: Record<string, unknown>) {
+  const { data, error } = await supabase
+    .from('uploads')
+    .update({ ...fields, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function updateUploadStatus(id: string, status: string) {
   const { data, error } = await supabase
     .from('uploads')
@@ -279,17 +351,27 @@ export async function uploadFileToStorage(
 export async function insertUploadFile(record: {
   upload_id: string;
   order_id: string | null;
-  user_id: string | null;
-  file_type: string;   // 'video' | 'image'
-  kind: string;        // 'walk' | 'foot' | 'shoe' | etc.
+  user_id?: string | null;   // 使わない(下記コメント参照)。互換のため受けるだけ
+  file_type: string;         // 'video' | 'image'
+  kind: string;              // file_kind enum: foot/walk/oneleg/sidejump/running/swing/shoes/... (008で拡張済み)
   url: string;
+  insole_sku?: string | null; // 靴の画像などインソール種別に紐づく場合(uploads_files.insole_sku)
   status?: string;
 }) {
+  // uploads_files.user_id は public.users.id への FK。auth.uid() は users.id ではないので
+  // ここに入れると FK 違反になる。親 uploads 行が user_id を保持しているので null で良い
+  // (RLS「authenticated can select own uploads_files」も user_id IS NULL を許容している)。
   const { data, error } = await supabase
     .from('uploads_files')
     .insert({
-      ...record,
-      status: record.status ?? 'uploaded',
+      upload_id: record.upload_id,
+      order_id: record.order_id,
+      user_id: null,
+      file_type: record.file_type,
+      kind: record.kind,
+      url: record.url,
+      insole_sku: record.insole_sku ?? null,
+      status: record.status ?? 'uploaded',  // 従来値を維持(text列。enum ではない)
       updated_at: new Date().toISOString(),
     })
     .select('id')

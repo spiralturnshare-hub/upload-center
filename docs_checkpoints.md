@@ -38,3 +38,23 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
 - 対象は足の画像のみ(靴・動画・厚紙A4は将来。docs/12・17)。
 - ビルド: `vite build` 成功。`tsc` の既存エラー(`Home.tsx` の `streamdown`)は未参照の孤立ファイル由来で本変更と無関係。
 - 戻し方: Vercel Deployments で CP1(`upload-center-fsvky1dkb`)を Promote to Production。
+
+### CP3 (2026-08-27 アップロード不能を解消:uploads 行の先行作成 + 顧客ID解決)
+- コミット: `<push後hash>`
+- Vercel Production: `<push後デプロイ>`(公開URL `https://upload-center-murex.vercel.app`)
+- 症状: 動画/画像をアップロードすると必ず「失敗しました」。Step2 へ進めず foot-guidance 連携も試せない。Green で `uploads_files` = 0 行(`upsys` に孤児2件)。
+- 原因(3層。詳細は spiralturn-green-integration/docs/18・20、migration 008 ヘッダ):
+  1. `uploads_files.upload_id → uploads.id` は FK(CASCADE)だが、親 `uploads` 行を Step8 でしか作っていなかった → Step1〜7 の INSERT が全て FK 違反。
+  2. `GuestUploadPage` / `PaymentIdUploadPage` が `initUploadSession()` を呼ばず `uploadId=''`(uuid 不正)。
+  3. RLS: ログイン顧客が `uploads` に INSERT できるポリシーが無い / `public.users` 行が作られない(→ migration 008 で解消済み)。
+  + `file_kind` enum に `sidejump`/`running`/`swing` が無く、靴の `kind` が `shoe_*`(enum に無い)。
+- DB 側前提: **migration 008 適用済み**(2026-08-27。auth.users→public.users 同期トリガー、uploads/users own系ポリシー是正、orders_select_by_email、file_kind 拡張)。
+- アプリ側修正(本コミット):
+  - `lib/supabase.ts`: `fetchMyCustomerId()`(セッション→`public.users.id`)、`ensureUploadRow()`(開始時に `uploads` を draft で upsert。`user_id` は `public.users.id`)、`updateUpload()` を新設。`insertUploadFile` は `user_id: null` 固定(FK 対策)+ `insole_sku` 対応、`status` 既定は従来値維持。
+  - `UploadContext`: `customerId`(public.users.id)を保持。`initUploadSession` を async 化し、uploadId 生成 + `ensureUploadRow` + 文脈反映。
+  - `HomePage` / `GuestUploadPage` / `PaymentIdUploadPage`: `await initUploadSession({...})` に統一。PaymentId は注文の `insole1/2_kind` を `selectedInsoles` として渡す。失敗時はトースト表示。
+  - `Step8ConfirmPage`: `insertUpload` → `updateUpload`(行は開始時に作成済み。`status='submitted'` と入力内容のみ更新。`id`/`user_id`/`order_name` は上書きしない)。
+  - `Step2PhotoPage`: 靴の `kind` を `'shoes'` + `insole_sku=<insoleKind>` に。エラートーストに実メッセージ。
+  - `Step1VideoPage`: 動画エラートーストに実メッセージ。
+- ビルド: `vite build` 成功。`tsc` の既存エラー(`Home.tsx` の `streamdown`。App.tsx 未参照の孤立ファイル)は本修正と無関係。
+- 戻し方: Vercel Deployments で CP2(`upload-center-805bvfnhs`)を Promote to Production。DB は migration 008 のロールバック SQL(ファイル末尾)。

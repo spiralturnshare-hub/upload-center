@@ -86,7 +86,7 @@ export default function Step1VideoPage() {
       console.error('動画アップロードエラー:', err);
       setUploadStatus(prev => ({ ...prev, [kind]: 'error' }));
       setUploadProgress(prev => ({ ...prev, [kind]: 0 }));
-      toast.error('動画のアップロードに失敗しました。再度お試しください。');
+      toast.error(`動画のアップロードに失敗しました: ${err instanceof Error ? err.message : '不明なエラー'}`);
     }
   };
 

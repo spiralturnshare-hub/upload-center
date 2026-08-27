@@ -8,7 +8,7 @@ import AppLayout from '@/components/AppLayout';
 import type { AppLayoutHandle } from '@/components/AppLayout';
 import PinkButton from '@/components/PinkButton';
 import { INSOLE_DISPLAY_NAMES, getRequiredVideoTypes, VIDEO_KIND_LABELS } from '@/lib/insoleConfig';
-import { insertUpload, fetchOrderAgencyInfo } from '@/lib/supabase';
+import { updateUpload, fetchOrderAgencyInfo } from '@/lib/supabase';
 import { notifyUploadCompleted } from '@/lib/makeNotify';
 import { toast } from 'sonner';
 
@@ -234,18 +234,14 @@ export default function Step8ConfirmPage() {
         otherNote: takoInfo.otherNote,
       };
 
-      await insertUpload({
-        id: uploadId,
-        // 上のガードにより userId は必ず非 null。
-        // RLS が user_id = auth.uid() で判定するため null を入れてはならない。
-        user_id: userId,
-        order_id: orderId || null,
-        order_name: orderId || null,
-        selected_insoles: selectedInsoles,
+      // uploads 行はアップロード開始時(initUploadSession)に既に draft で作成済み。
+      // ここでは残りの入力内容を書き込み、status を 'submitted' へ更新する(insert → update)。
+      // id / user_id / order_name / order_id / selected_insoles / guest_tf は
+      // 開始時に正しくセット済みなので上書きしない(user_id は public.users.id が入っている)。
+      await updateUpload(uploadId, {
         status: 'submitted',
         insole_user_name: customerInfo.userName,
         insole_user_kana: customerInfo.userKana,
-        guest_tf: isGuestUpload,
         previous_design_tf: false,
         room_color: roomColor || null,
         shoe_infos: shoeInfosForDb,

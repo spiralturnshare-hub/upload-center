@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { InsoleKind } from '@/lib/insoleConfig';
-import { supabase } from '@/lib/supabase';
+import { supabase, fetchMyCustomerId, ensureUploadRow } from '@/lib/supabase';
 
 // ============================================================
 // Design: ビビッド・フォーム
@@ -139,8 +139,19 @@ interface UploadContextType {
   setOrderId: (v: string) => void;
   orderName: string;
   setOrderName: (v: string) => void;
-  userId: string | null;
-  initUploadSession: () => string;
+  userId: string | null;          // auth.users.id (= auth.uid())
+  customerId: string | null;      // public.users.id(= 顧客ID。uploads.user_id はこれ)
+  /**
+   * アップロード開始時に呼ぶ。uploadId(UUID)を生成し、uploads 行を draft で先に作成する
+   * (親行が無いと Step1〜7 の uploads_files INSERT が FK 違反で失敗するため)。
+   * 生成した uploadId を返す。呼び出し側は await すること。
+   */
+  initUploadSession: (opts?: {
+    orderId?: string;
+    orderName?: string;
+    selectedInsoles?: InsoleKind[];
+    isGuest?: boolean;
+  }) => Promise<string>;
 }
 
 const defaultShoeInfo: ShoeInfo = {
@@ -200,14 +211,17 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   const [orderName, setOrderName] = useState('');
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [customerId, setCustomerId] = useState<string | null>(null);
 
-  // Supabase Auth のセッションを監視してuserIdを取得
+  // Supabase Auth のセッションを監視して userId(auth)と customerId(public.users.id)を取得
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUserId(data.session?.user?.id ?? null);
-    });
+    const sync = async (uid: string | null) => {
+      setUserId(uid);
+      setCustomerId(uid ? await fetchMyCustomerId() : null);
+    };
+    supabase.auth.getSession().then(({ data }) => { void sync(data.session?.user?.id ?? null); });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserId(session?.user?.id ?? null);
+      void sync(session?.user?.id ?? null);
     });
     return () => listener.subscription.unsubscribe();
   }, []);
@@ -218,12 +232,34 @@ export function UploadProvider({ children }: { children: ReactNode }) {
 
   /**
    * アップロードセッションを初期化する。
-   * 新しいuploadIdをUUIDで生成してContextに設定し、返す。
-   * Step1遷移前（アップロード開始時）に呼び出す。
+   * (1) 新しい uploadId を UUID で生成
+   * (2) uploads 行を status='draft' で先に作成(ensureUploadRow)
+   *     ── これが無いと Step1〜7 の uploads_files INSERT が
+   *        FK(uploads_files.upload_id → uploads.id)違反で全滅する
+   * (3) Context に uploadId と受け取った文脈(order/insole/guest)を反映
+   * Step1 へ遷移する全経路(Home / GuestUpload / PaymentIdUpload)から await で呼ぶ。
    */
-  const initUploadSession = (): string => {
+  const initUploadSession = async (opts?: {
+    orderId?: string;
+    orderName?: string;
+    selectedInsoles?: InsoleKind[];
+    isGuest?: boolean;
+  }): Promise<string> => {
     const newId = crypto.randomUUID();
-    setUploadData(prev => ({ ...prev, uploadId: newId }));
+    const insoles = opts?.selectedInsoles ?? uploadData.selectedInsoles ?? [];
+    await ensureUploadRow({
+      uploadId: newId,
+      customerId,
+      orderId: opts?.orderId ?? orderId ?? null,
+      orderName: opts?.orderName ?? orderName ?? null,
+      selectedInsoles: insoles,
+      isGuest: opts?.isGuest ?? isGuestUpload,
+    });
+    setUploadData(prev => ({
+      ...prev,
+      uploadId: newId,
+      ...(opts?.selectedInsoles ? { selectedInsoles: opts.selectedInsoles } : {}),
+    }));
     return newId;
   };
 
@@ -244,6 +280,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
       orderId, setOrderId,
       orderName, setOrderName,
       userId,
+      customerId,
       initUploadSession,
     }}>
       {children}

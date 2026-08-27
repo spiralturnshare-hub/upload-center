@@ -31,7 +31,7 @@ const REASONS = [
 ];
 
 export default function GuestUploadPage() {
-  const { setCurrentPage, setIsGuestUpload, updateUploadData } = useUpload();
+  const { setCurrentPage, setIsGuestUpload, updateUploadData, initUploadSession } = useUpload();
   const [step, setStep] = useState<Step>('questionnaire');
   const [selectedReason, setSelectedReason] = useState('');
   const [otherText, setOtherText] = useState('');
@@ -73,13 +73,18 @@ export default function GuestUploadPage() {
     setStep('guest-confirm');
   };
 
-  const handleStartGuestUpload = () => {
+  const handleStartGuestUpload = async () => {
     scrollToTop();
     if (!photoChecked) { setPhotoError(true); toast.error('撮影完了のチェックを入れてください'); return; }
     setIsGuestUpload(true);
-    // 選択したインソール種別をContextに反映してSTEP1へ
     updateUploadData({ selectedInsoles });
-    setCurrentPage('step1');
+    try {
+      // uploadId 生成 + uploads 行を draft(guest_tf=true)で先に作成(FK対策)
+      await initUploadSession({ selectedInsoles, isGuest: true });
+      setCurrentPage('step1');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'アップロードの開始に失敗しました。');
+    }
   };
 
   const handleBack = () => {
