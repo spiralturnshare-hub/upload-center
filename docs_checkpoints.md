@@ -27,8 +27,8 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
 - 内容: EditUploadPage追加。決済完了ID照合後、既存アップロードがあれば「確認・修正する」導線へ。production_workflows(measure_done/analy_done)により作製開始後は編集不可に。
 
 ### CP2 (2026-08-27 Step2に「かんたん撮影アプリを起動」ボタンを追加)
-- コミット: `<push後hash>`
-- Vercel Production: `<push後デプロイ>`
+- コミット: `0241b86`("feat: Step2に「かんたん撮影アプリを起動」ボタンを追加(foot-guidance連携)")
+- Vercel Production: `upload-center-805bvfnhs`
 - 内容(docs/17「アップロード完全音声化ビジョン」の第一歩・フェーズ2。foot-guidance CP1 と対):
   - `Step2PhotoPage.tsx` の「足の画像」欄に「かんたん撮影アプリを起動」ボタンを追加。押下で foot-guidance(`https://foot-guidance.vercel.app`)を新タブで開き、`from=upload-center` / `orderid` / `ordername` / `uploadid` / `userid` + ログイン中なら Supabase セッション(URLハッシュ)を渡す。
   - foot-guidance 側で撮影完了 → 画像は Green Storage `upsys` / `uploads_files`(kind=foot)へ入り、端末にもダウンロードされる。本画面へは `window.opener.postMessage` で通知が来る。
