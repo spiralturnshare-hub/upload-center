@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Info, Footprints, Shirt, CheckCircle2, ExternalLink } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Info, Footprints, Shirt, CheckCircle2, ExternalLink, Camera } from 'lucide-react';
 import { useUpload } from '@/contexts/UploadContext';
 import AppLayout from '@/components/AppLayout';
 import type { AppLayoutHandle } from '@/components/AppLayout';
@@ -7,7 +7,10 @@ import PinkButton from '@/components/PinkButton';
 import UploadZone from '@/components/UploadZone';
 import { getRequiredImageTypes, INSOLE_DISPLAY_NAMES } from '@/lib/insoleConfig';
 import { toast } from 'sonner';
-import { uploadFileToStorage, insertUploadFile } from '@/lib/supabase';
+import { uploadFileToStorage, insertUploadFile, supabase, fetchCurrentUploadFiles } from '@/lib/supabase';
+
+// 音声ガイダンス撮影アプリ(foot-guidance)の公開オリジン。postMessage の検証にも使う。
+const FOOT_GUIDANCE_ORIGIN = 'https://foot-guidance.vercel.app';
 
 // ============================================================
 // Design: ビビッド・フォーム
@@ -22,7 +25,7 @@ const SHOOTING_GUIDE_URL = 'https://dataguide.insoleorder.jp/';
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
 export default function Step2PhotoPage() {
-  const { setCurrentPage, uploadData, updateUploadData, userId, orderId } = useUpload();
+  const { setCurrentPage, uploadData, updateUploadData, userId, orderId, orderName } = useUpload();
   const { selectedInsoles, footPhotoFiles, footPhotosUploaded, shoePhotoFiles, shoePhotosUploaded, uploadId } = uploadData;
   const layoutRef = useRef<AppLayoutHandle>(null);
 
@@ -130,6 +133,80 @@ export default function Step2PhotoPage() {
     doUploadShoe(insoleKind, files);
   };
 
+  // 足の画像を「アップロード済み」状態にする(撮影アプリから戻ってきたとき用)
+  const markFootUploaded = useCallback(() => {
+    setFootStatus('success');
+    setFootProgress(100);
+    updateUploadData({ footPhotosUploaded: true });
+  }, [updateUploadData]);
+
+  /**
+   * かんたん撮影アプリ(foot-guidance)を新しいタブで起動する。
+   * 顧客コンテキスト(注文番号・注文名・uploadId・userId)と、ログイン中なら
+   * Supabase セッションを渡す。撮影完了で foot-guidance が画像を Green Storage /
+   * uploads_files へ入れ、window.opener.postMessage で本画面に通知してくる。
+   */
+  const launchFootGuidance = useCallback(async () => {
+    if (!uploadId) {
+      toast.error('アップロード情報が見つかりません。最初からやり直してください。');
+      return;
+    }
+    const params = new URLSearchParams({
+      from: 'upload-center',
+      uploadid: uploadId,
+      origin: window.location.origin,
+    });
+    if (orderId) params.set('orderid', orderId);
+    if (orderName) params.set('ordername', orderName);
+    if (userId) params.set('userid', userId);
+
+    let url = `${FOOT_GUIDANCE_ORIGIN}/?${params.toString()}`;
+    try {
+      const { data } = await supabase.auth.getSession();
+      const s = data.session;
+      if (s?.access_token && s?.refresh_token) {
+        url += `#access_token=${encodeURIComponent(s.access_token)}&refresh_token=${encodeURIComponent(s.refresh_token)}`;
+      }
+    } catch {
+      // セッション取得に失敗しても起動自体は続行(RLS 上は匿名でも書き込める)
+    }
+    // window.opener 経由で結果を受け取るため noopener は付けない
+    window.open(url, '_blank');
+  }, [uploadId, orderId, orderName, userId]);
+
+  // foot-guidance からの完了通知(postMessage)を受ける
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== FOOT_GUIDANCE_ORIGIN) return;
+      const d = e.data;
+      if (!d || d.source !== 'foot-guidance' || d.status !== 'uploaded' || d.kind !== 'foot') return;
+      if (d.uploadId && uploadId && d.uploadId !== uploadId) return;
+      markFootUploaded();
+      toast.success('撮影アプリから足の画像を受け取りました');
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [uploadId, markFootUploaded]);
+
+  // postMessage が届かなかった場合の保険: タブに戻ってきたら uploads_files を再確認
+  useEffect(() => {
+    const recheck = async () => {
+      if (document.visibilityState !== 'visible' || !uploadId || footPhotosUploaded) return;
+      try {
+        const files = await fetchCurrentUploadFiles(uploadId);
+        if (files.some((f) => f.kind === 'foot')) markFootUploaded();
+      } catch {
+        // 取得失敗は無視(手動アップロードの導線は残っている)
+      }
+    };
+    window.addEventListener('focus', recheck);
+    document.addEventListener('visibilitychange', recheck);
+    return () => {
+      window.removeEventListener('focus', recheck);
+      document.removeEventListener('visibilitychange', recheck);
+    };
+  }, [uploadId, footPhotosUploaded, markFootUploaded]);
+
   // 全ての必要な写真がアップロード済みかチェック
   const footDone = footPhotosUploaded || footStatus === 'success' || footPhotoFiles.length > 0;
   const shoeDone = !needsShoePhoto || shoePhotoInsoles.every(
@@ -211,6 +288,24 @@ export default function Step2PhotoPage() {
           </div>
 
           <div className="p-4 space-y-3">
+            {/* かんたん撮影アプリ(音声ガイダンス+撮影枠)への導線 */}
+            <button
+              type="button"
+              onClick={launchFootGuidance}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold text-white transition-all duration-150 hover:opacity-90 active:scale-[0.98]"
+              style={{ backgroundColor: '#D62598' }}
+            >
+              <Camera className="w-4 h-4" />
+              かんたん撮影アプリを起動
+            </button>
+            <p className="text-[11px] text-gray-400 text-center leading-relaxed">
+              音声ガイダンスと撮影枠に従って撮るだけ。撮影後この画面に自動で取り込まれ、端末にも保存されます。
+            </p>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-px bg-gray-100" />
+              <span className="text-[11px] text-gray-400">または手動で選択</span>
+              <div className="flex-1 h-px bg-gray-100" />
+            </div>
             <UploadZone
               accept="image/*"
               type="photo"

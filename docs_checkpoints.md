@@ -25,3 +25,16 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
 - コミット: `03f784a`
 - Vercel Production: https://upload-center-fsvky1dkb-spiral-turn.vercel.app
 - 内容: EditUploadPage追加。決済完了ID照合後、既存アップロードがあれば「確認・修正する」導線へ。production_workflows(measure_done/analy_done)により作製開始後は編集不可に。
+
+### CP2 (2026-08-27 Step2に「かんたん撮影アプリを起動」ボタンを追加)
+- コミット: `<push後hash>`
+- Vercel Production: `<push後デプロイ>`
+- 内容(docs/17「アップロード完全音声化ビジョン」の第一歩・フェーズ2。foot-guidance CP1 と対):
+  - `Step2PhotoPage.tsx` の「足の画像」欄に「かんたん撮影アプリを起動」ボタンを追加。押下で foot-guidance(`https://foot-guidance.vercel.app`)を新タブで開き、`from=upload-center` / `orderid` / `ordername` / `uploadid` / `userid` + ログイン中なら Supabase セッション(URLハッシュ)を渡す。
+  - foot-guidance 側で撮影完了 → 画像は Green Storage `upsys` / `uploads_files`(kind=foot)へ入り、端末にもダウンロードされる。本画面へは `window.opener.postMessage` で通知が来る。
+  - `message` リスナー(origin を `https://foot-guidance.vercel.app` で検証)で受信し、`footPhotosUploaded=true` にして「アップロード済み」表示へ。届かなかった場合の保険として、タブ復帰(focus/visibilitychange)時に `fetchCurrentUploadFiles(uploadId)` を再確認。
+  - 手動アップロード(UploadZone)の導線はそのまま残す(「または手動で選択」)。
+  - 3経路(通常 / ゲスト / パスコード)は全て Step2PhotoPage に合流するため、この1画面の変更で全経路に反映される。
+- 対象は足の画像のみ(靴・動画・厚紙A4は将来。docs/12・17)。
+- ビルド: `vite build` 成功。`tsc` の既存エラー(`Home.tsx` の `streamdown`)は未参照の孤立ファイル由来で本変更と無関係。
+- 戻し方: Vercel Deployments で CP1(`upload-center-fsvky1dkb`)を Promote to Production。
