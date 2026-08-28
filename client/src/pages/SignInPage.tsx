@@ -38,11 +38,15 @@ export default function SignInPage() {
       email,
       options: {
         shouldCreateUser: true,
+        // OTP メールに含まれるリンクを踏んだ場合の戻り先。未指定だと Supabase 共通の
+        // Site URL(別アプリ)に飛ぶため明示する。コード入力フローでは使われないが保険。
+        emailRedirectTo: window.location.origin,
       },
     });
     setLoading(false);
     if (otpError) {
-      setError('メール送信に失敗しました。しばらく待ってから再試行してください。');
+      // 実際の失敗理由を出す(例: "email rate limit exceeded" = Supabase Auth の送信上限)
+      setError(`メール送信に失敗しました: ${otpError.message}`);
       return;
     }
     setUserEmail(email);
