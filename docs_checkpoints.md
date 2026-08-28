@@ -108,3 +108,7 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
   - `lib/supabase.ensureUploadRow`: `order_id: orderId || null` / `order_name: orderName || null`(二重防御)。
 - ビルド: `vite build` 成功。
 - 戻し方: Vercel Deployments で `657889a` のデプロイを Promote to Production。
+
+- **疎通確認 (2026-08-28 13:05 JST)**: `tominaga@spiralturn.co.jp` で Safari からサインイン成功 →
+  「アップロードを開始」→ STEP1 → STEP2 →「かんたん撮影アプリを起動」で foot-guidance 起動まで確認。
+  STEP3〜STEP8 の通しは次セッションで実施予定。foot-guidance 起動後の挙動修正も次セッション。
