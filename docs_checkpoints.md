@@ -77,3 +77,21 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
   - Authentication → Providers → Email → **Email OTP Length = 6**(アプリ表記と揃える)、OTP 有効期限 ≥ 600 秒。
 - ビルド: `vite build` 成功。
 - 戻し方: Vercel Deployments で `upload-center-jqkgvtuf5` を Promote to Production。
+
+### CP5 (2026-08-28 ログイン後「アップロードの開始に失敗しました」を解消)
+- 変更前コミット: `3c81cd9`
+- 症状: サインイン成功後、ホームで「アップロードを開始」等を押すと
+  「アップロードの開始に失敗しました。再ログインしてお試しください。」。
+- 切り分け(service_role + ユーザーJWTで実機再現):
+  - `public.users` に本人行あり・`auth_user_id` 正しく紐付け済み。
+  - 本人JWTで `uploads` への upsert(user_id = 自分の public.users.id)は **HTTP 201 成功**。
+  - → DB/RLS は正常。原因はクライアント側で `customerId` が null のまま
+    `ensureUploadRow` に渡っていたこと(`UploadContext` のセッション監視 useEffect が
+    `fetchMyCustomerId()` を解決し終える前に利用者がボタンをタップ = 競合)。
+- 修正(本コミット):
+  - `lib/supabase.ts` `fetchMyCustomerId()`: 堅牢化。getSession→getUser フォールバック、
+    users 取得を 1 回リトライ。
+  - `contexts/UploadContext.tsx` `initUploadSession()`: state の `customerId` に依存せず、
+    null なら呼び出し時に `fetchMyCustomerId()` で解決し直してから `ensureUploadRow` に渡す。
+- ビルド: `vite build` 成功。
+- 戻し方: Vercel Deployments で `3c81cd9` のデプロイを Promote to Production。

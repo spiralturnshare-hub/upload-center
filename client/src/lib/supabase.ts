@@ -48,21 +48,42 @@ export async function insertUpload(upload: Record<string, unknown>) {
 //   uploads.user_id / uploads_files 系の FK は public.users.id を指す(auth.uid() ではない)。
 //   migration 008 のトリガーで、ログイン済みユーザーには必ず public.users 行が存在する。
 //   RLS users_select_own(auth.uid() = auth_user_id)で自分の行だけ引ける。
+//
+// 【過去の失敗と対策 (2026-08-28)】
+//   ログイン直後に「アップロードの開始に失敗しました」が出ていた。原因は、
+//   Context の customerId がセッション監視の非同期解決待ちで null のまま、
+//   利用者が「アップロードを開始」を先にタップしていたこと(競合)。
+//   対策として本関数を「呼び出し時に必ず解決を試みる」堅牢版にし、
+//   initUploadSession からは毎回これを await するようにした(state に依存しない)。
+//   - getSession()(ローカル読み)で取れなければ getUser()(サーバ確認)にフォールバック
+//   - 直後は稀に users 行の可視化が遅れるため 1 回だけ短いリトライ
 // ============================================================
 export async function fetchMyCustomerId(): Promise<string | null> {
+  // (1) authUid をローカルセッション → サーバ確認 の順で得る
+  let authUid: string | undefined;
   const { data: sess } = await supabase.auth.getSession();
-  const authUid = sess.session?.user?.id;
-  if (!authUid) return null;
-  const { data, error } = await supabase
-    .from('users')
-    .select('id')
-    .eq('auth_user_id', authUid)
-    .maybeSingle();
-  if (error) {
-    console.error('public.users 解決エラー:', error);
-    return null;
+  authUid = sess.session?.user?.id;
+  if (!authUid) {
+    const { data: usr } = await supabase.auth.getUser();
+    authUid = usr.user?.id;
   }
-  return data?.id ?? null;
+  if (!authUid) return null;
+
+  // (2) public.users.id を引く。取れなければ 1 回だけリトライ
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id')
+      .eq('auth_user_id', authUid)
+      .maybeSingle();
+    if (error) {
+      console.error('public.users 解決エラー:', error);
+      return null;
+    }
+    if (data?.id) return data.id;
+    if (attempt === 0) await new Promise(r => setTimeout(r, 400));
+  }
+  return null;
 }
 
 // ============================================================

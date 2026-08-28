@@ -247,9 +247,20 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   }): Promise<string> => {
     const newId = crypto.randomUUID();
     const insoles = opts?.selectedInsoles ?? uploadData.selectedInsoles ?? [];
+
+    // customerId(public.users.id)を呼び出し時点で確定させる。
+    // Context state はセッション監視の非同期解決待ちで null のことがある
+    // (利用者のタップが先行するとこれで「開始に失敗」していた ─ 2026-08-28)。
+    // state に無ければその場で解決し直し、取れたら state にも反映する。
+    let cid = customerId;
+    if (!cid) {
+      cid = await fetchMyCustomerId();
+      if (cid) setCustomerId(cid);
+    }
+
     await ensureUploadRow({
       uploadId: newId,
-      customerId,
+      customerId: cid,
       orderId: opts?.orderId ?? orderId ?? null,
       orderName: opts?.orderName ?? orderName ?? null,
       selectedInsoles: insoles,
