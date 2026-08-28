@@ -58,3 +58,22 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
   - `Step1VideoPage`: 動画エラートーストに実メッセージ。
 - ビルド: `vite build` 成功。`tsc` の既存エラー(`Home.tsx` の `streamdown`。App.tsx 未参照の孤立ファイル)は本修正と無関係。
 - 戻し方: Vercel Deployments で CP2(`upload-center-805bvfnhs`)を Promote to Production。DB は migration 008 のロールバック SQL(ファイル末尾)。
+
+### CP4 (2026-08-28 サインイン: マジックリンク依存をやめ「コード直接入力」に固定)
+- 変更前コミット: `ecc0524`
+- Vercel Production(変更前): `upload-center-jqkgvtuf5`(公開URL `https://upload-center-murex.vercel.app`)
+- 症状: モバイルで upload-center にログインできない。メールのマジックリンクをタップしても未ログインのまま。
+- 原因(実機スクショで確定。詳細は spiralturn-green-integration セッションログ 2026-08-28):
+  1. **アプリ内ブラウザのストレージ分離**: メールアプリ(Gmail等)内でリンクを開くと、その WebView の隔離 localStorage にしかセッションが載らず、本体 Safari/Chrome には共有されない。
+  2. **リンクの先読み消費**: Gmail 等がメール内 URL を安全スキャンし、使い捨てトークンを本人タップ前に消費(otp_expired)。
+  3. Supabase の `email_otp` は 8桁だが、アプリは `length !== 6` / `maxLength={6}` 固定でコード入力不可。
+- 修正(本コミット、`SignInPage.tsx` のみ):
+  - 冒頭に「マジックリンクをモバイルで使わない理由と対策」を注釈。
+  - コード桁数の固定 6 をやめ `OTP_MIN_LEN=4` / `OTP_MAX_LEN=10`(Supabase の Email OTP Length 設定に追従)。`maxLength` も追従。
+  - OTP ステップの案内文を「メール記載のコードをこの画面に入力。リンクは使わない」に変更。
+  - 検証失敗時に実エラー(`verifyError.message`)を表示。
+- Supabase 側で別途必要な設定(冨永が実施):
+  - Authentication → Emails → **Magic Link テンプレートに `{{ .Token }}`(コード)を表示**させる。
+  - Authentication → Providers → Email → **Email OTP Length = 6**(アプリ表記と揃える)、OTP 有効期限 ≥ 600 秒。
+- ビルド: `vite build` 成功。
+- 戻し方: Vercel Deployments で `upload-center-jqkgvtuf5` を Promote to Production。

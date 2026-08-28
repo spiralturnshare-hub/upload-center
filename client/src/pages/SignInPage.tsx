@@ -12,8 +12,26 @@ const ERROR_BG = '#FFF7ED';
 // ============================================================
 // Design: ビビッド・フォーム
 // SignInPage: メールアドレス入力 → OTPコード確認の2ステップ認証
-// Supabase Email OTP（6桁コード）による本人確認
+// Supabase Email OTP による本人確認。
+//
+// 【重要 / 過去の失敗と対策 (2026-08-28)】
+//   メールに含まれる「マジックリンク」をモバイルでタップする方式は使わない。理由:
+//     (1) メールアプリ(Gmail/LINE等)のアプリ内ブラウザでリンクが開くと、
+//         セッションはそのWebViewの隔離localStorageに保存され、ユーザーが普段使う
+//         Safari/Chrome には決して共有されない → 本体ブラウザでは未ログインのまま。
+//     (2) Gmail等がメール内URLを安全スキャンで先読みし、使い捨てトークンを
+//         本人のタップ前に消費してしまう(otp_expired)。
+//   → 対策: 常に「メール記載の確認コード」を本体ブラウザで直接入力させる。
+//     verifyOtp({type:'email'}) は入力したブラウザにそのままセッションを張るため、
+//     リダイレクト・URLハッシュ・アプリ内ブラウザを一切経由しない。
+//   ※ Supabase 側の「Magic Link」メールテンプレートに {{ .Token }}(コード)を
+//      表示させておくこと。テンプレートがリンクのみだとユーザーがコードを得られない。
+//   ※ コード桁数は Supabase の Email OTP Length 設定に追従(既定6、最大10まで許容)。
 // ============================================================
+
+// 確認コードの許容桁数(Supabase Auth の Email OTP Length 設定に合わせる。既定=6)
+const OTP_MIN_LEN = 4;
+const OTP_MAX_LEN = 10;
 
 export default function SignInPage() {
   const { setCurrentPage, setIsLoggedIn, setUserEmail } = useUpload();
@@ -55,8 +73,8 @@ export default function SignInPage() {
 
   const handleVerifyOtp = async () => {
     layoutRef.current?.scrollToTop();
-    if (!otpCode || otpCode.length !== 6) {
-      setError('6桁の確認コードを入力してください');
+    if (!otpCode || otpCode.length < OTP_MIN_LEN || otpCode.length > OTP_MAX_LEN) {
+      setError('メールに記載された確認コードを入力してください');
       setFieldError(true);
       return;
     }
@@ -69,7 +87,8 @@ export default function SignInPage() {
     });
     setLoading(false);
     if (verifyError) {
-      setError('確認コードが正しくありません。再度お試しください。');
+      // 実際の理由を出す(expired = 期限切れ / invalid = コード誤り など)
+      setError(`確認できませんでした: ${verifyError.message}`);
       setFieldError(true);
       return;
     }
@@ -104,7 +123,8 @@ export default function SignInPage() {
             <>
               <h2 className="text-lg font-bold text-gray-800">確認コードを入力</h2>
               <p className="text-xs text-gray-400 text-center mt-1 leading-relaxed">
-                {email} に送信された6桁のコードを入力してください
+                {email} に届いたメールに記載の確認コードを、この画面に入力してください
+                （メール内のリンクは使わないでください）
               </p>
             </>
           )}
@@ -138,7 +158,7 @@ export default function SignInPage() {
             </PinkButton>
             <div className="text-center">
               <p className="text-xs text-gray-400 leading-relaxed">
-                入力したメールアドレスに6桁の確認コードが送信されます
+                入力したメールアドレスに確認コードが届きます。次の画面でそのコードを入力してください
               </p>
             </div>
           </div>
@@ -146,12 +166,12 @@ export default function SignInPage() {
           /* OTPコード入力ステップ */
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-semibold text-gray-700">確認コード（6桁）</label>
+              <label className="text-sm font-semibold text-gray-700">確認コード（メール記載）</label>
               <input
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                maxLength={6}
+                maxLength={OTP_MAX_LEN}
                 value={otpCode}
                 onChange={(e) => { setOtpCode(e.target.value.replace(/\D/g, '')); setFieldError(false); setError(''); }}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleVerifyOtp(); }}
