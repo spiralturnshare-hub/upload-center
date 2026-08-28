@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { InsoleKind } from '@/lib/insoleConfig';
-import { supabase, fetchMyCustomerId, ensureUploadRow } from '@/lib/supabase';
+import { supabase, fetchMyCustomerId, ensureUploadRow, lastCustomerIdDiag } from '@/lib/supabase';
 
 // ============================================================
 // Design: ビビッド・フォーム
@@ -256,6 +256,10 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     if (!cid) {
       cid = await fetchMyCustomerId();
       if (cid) setCustomerId(cid);
+    }
+    if (!cid && !(opts?.isGuest ?? isGuestUpload)) {
+      // 顧客IDが最後まで取れない場合は、理由を添えて投げる(原因の可視化)
+      throw new Error(`顧客ID未取得: ${lastCustomerIdDiag || '理由不明'}`);
     }
 
     await ensureUploadRow({

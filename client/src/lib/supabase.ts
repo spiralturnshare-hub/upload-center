@@ -58,6 +58,9 @@ export async function insertUpload(upload: Record<string, unknown>) {
 //   - getSession()(ローカル読み)で取れなければ getUser()(サーバ確認)にフォールバック
 //   - 直後は稀に users 行の可視化が遅れるため 1 回だけ短いリトライ
 // ============================================================
+// 直近の解決失敗理由(initUploadSession のエラーメッセージに載せて原因を可視化する)
+export let lastCustomerIdDiag = '';
+
 export async function fetchMyCustomerId(): Promise<string | null> {
   // (1) authUid をローカルセッション → サーバ確認 の順で得る
   let authUid: string | undefined;
@@ -67,7 +70,10 @@ export async function fetchMyCustomerId(): Promise<string | null> {
     const { data: usr } = await supabase.auth.getUser();
     authUid = usr.user?.id;
   }
-  if (!authUid) return null;
+  if (!authUid) {
+    lastCustomerIdDiag = 'authUid なし(getSession/getUser ともに空。セッション未確立)';
+    return null;
+  }
 
   // (2) public.users.id を引く。取れなければ 1 回だけリトライ
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -77,12 +83,14 @@ export async function fetchMyCustomerId(): Promise<string | null> {
       .eq('auth_user_id', authUid)
       .maybeSingle();
     if (error) {
+      lastCustomerIdDiag = `users参照エラー [${error.code ?? '?'}] ${error.message} (authUid=${authUid})`;
       console.error('public.users 解決エラー:', error);
       return null;
     }
-    if (data?.id) return data.id;
+    if (data?.id) { lastCustomerIdDiag = ''; return data.id; }
     if (attempt === 0) await new Promise(r => setTimeout(r, 400));
   }
+  lastCustomerIdDiag = `users に auth_user_id=${authUid} の行が無い(008トリガー/バックフィル未反映?)`;
   return null;
 }
 
@@ -104,7 +112,7 @@ export async function ensureUploadRow(params: {
 }) {
   const { uploadId, customerId, orderId, orderName, selectedInsoles, isGuest } = params;
   if (!customerId) {
-    throw new Error('顧客情報(public.users)が取得できませんでした。再ログインしてください。');
+    throw new Error('顧客ID未取得: public.users 行が引けませんでした（セッションは有効な可能性）。再ログインしてください。');
   }
   const { error } = await supabase
     .from('uploads')
@@ -121,7 +129,17 @@ export async function ensureUploadRow(params: {
       },
       { onConflict: 'id', ignoreDuplicates: true },
     );
-  if (error) throw error;
+  // Supabase の error は PostgrestError(素のオブジェクト)で instanceof Error が false。
+  // そのまま throw すると呼び出し側の `e instanceof Error` 判定を通らず、
+  // 汎用メッセージに潰れて原因が分からなくなる → 実コード/詳細を Error にして投げる。
+  if (error) {
+    throw new Error(
+      `uploads作成失敗 [${error.code ?? '?'}] ${error.message}` +
+      `${error.details ? ` / ${error.details}` : ''}` +
+      `${error.hint ? ` / hint: ${error.hint}` : ''}` +
+      ` (user_id=${customerId})`,
+    );
+  }
 }
 
 // uploads 行の本更新(Step8 の確定時。従来 insertUpload していたのを update へ)
