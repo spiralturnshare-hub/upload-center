@@ -95,3 +95,16 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
     null なら呼び出し時に `fetchMyCustomerId()` で解決し直してから `ensureUploadRow` に渡す。
 - ビルド: `vite build` 成功。
 - 戻し方: Vercel Deployments で `3c81cd9` のデプロイを Promote to Production。
+
+### CP6 (2026-08-28 「アップロードの開始に失敗」の真因: order_id に空文字)
+- 変更前コミット: `657889a`(診断ログ入り)
+- 実エラー(診断ログで判明): `uploads作成失敗 [22P02] invalid input syntax for type uuid: "" (user_id=9f47f4f6-…)`
+- 原因: `initUploadSession` の `orderId: opts?.orderId ?? orderId ?? null`。
+  ホーム/ゲスト経路は orderId を渡さず Context state を使うが、その初期値が `''`。
+  `??` は null/undefined しか変換しないため `''` が uuid 列 `uploads.order_id` に渡り 22P02。
+  (CP5 で customerId 競合を疑ったが実際は別。診断ログ CP=657889a で確定)
+- 修正(本コミット):
+  - `UploadContext.initUploadSession`: `orderId:(opts?.orderId ?? orderId) || null` / orderName も同様。
+  - `lib/supabase.ensureUploadRow`: `order_id: orderId || null` / `order_name: orderName || null`(二重防御)。
+- ビルド: `vite build` 成功。
+- 戻し方: Vercel Deployments で `657889a` のデプロイを Promote to Production。

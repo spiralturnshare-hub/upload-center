@@ -120,8 +120,9 @@ export async function ensureUploadRow(params: {
       {
         id: uploadId,
         user_id: customerId,
-        order_id: orderId,
-        order_name: orderName,
+        // 空文字が来ても uuid 列に渡さない(呼び出し側で正規化済みだが二重防御)
+        order_id: orderId || null,
+        order_name: orderName || null,
         selected_insoles: selectedInsoles ?? [],
         guest_tf: isGuest,
         status: 'draft',

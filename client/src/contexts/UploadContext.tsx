@@ -265,8 +265,12 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     await ensureUploadRow({
       uploadId: newId,
       customerId: cid,
-      orderId: opts?.orderId ?? orderId ?? null,
-      orderName: opts?.orderName ?? orderName ?? null,
+      // Context の orderId / orderName state は初期値が ''(空文字)。
+      // `??` は null/undefined しか変換しないため '' がそのまま uuid 列に渡り
+      // [22P02] invalid input syntax for type uuid: "" になっていた(2026-08-28)。
+      // `|| null` で空文字も null に落とす。
+      orderId: (opts?.orderId ?? orderId) || null,
+      orderName: (opts?.orderName ?? orderName) || null,
       selectedInsoles: insoles,
       isGuest: opts?.isGuest ?? isGuestUpload,
     });
