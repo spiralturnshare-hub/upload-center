@@ -112,3 +112,23 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
 - **疎通確認 (2026-08-28 13:05 JST)**: `tominaga@spiralturn.co.jp` で Safari からサインイン成功 →
   「アップロードを開始」→ STEP1 → STEP2 →「かんたん撮影アプリを起動」で foot-guidance 起動まで確認。
   STEP3〜STEP8 の通しは次セッションで実施予定。foot-guidance 起動後の挙動修正も次セッション。
+
+---
+
+## DB migration 010(RLS 硬化)適用 2026-08-28 — コード変更なし
+
+`spiralturn-green-integration/supabase/migrations/010_rls_hardening.sql` を Green Supabase に適用(冨永社長が SQL Editor で実行・検証済み)。upload-center への影響:
+
+- `uploads` の **anon INSERT ポリシー(`uploads_insert_anon`, `WITH CHECK true`)を削除**。ゲスト/決済経路とも、アップロード開始は **ログイン済み(authenticated)セッション**で `uploads_insert_own`(`user_id` を `users.auth_user_id = auth.uid()` で解決)を通ること。S2 でログイン必須化済みなので想定どおりのはずだが、`initUploadSession` / `ensureUploadRow` が匿名セッションで走っていないか実機で確認する。
+- `uploads_files` の緩い INSERT/SELECT(`true` / anon)を全削除し、`uploads_files_insert_own` / `uploads_files_select_own`(いずれも `upload_id → uploads.user_id → users.auth_user_id = auth.uid()`)を新設。顧客はこの経路で自分のファイルのみ読み書き可。
+- Storage `upsys`: anon INSERT を全廃。認証アップロードは `allow authenticated upload to upsys` が残る。バケットに 200MB 上限。
+- 実機確認(未): サインイン → アップロード開始 → STEP2 でファイル添付 → 反映。壊れたら 010 末尾のロールバック SQL。
+
+---
+
+## 2026-09-04: Legacy anon JWT → 新 publishable キー(docs/35 WS-B / docs/36)
+
+- 変更前 HEAD: `0cafa38` / Vercel Production: https://upload-center-murex.vercel.app
+- `client/src/lib/supabase.ts`: ハードコード fallback(旧 anon JWT)撤去 → env 必須(未設定なら throw)
+- Vercel env `VITE_SUPABASE_ANON_KEY` を `sb_publishable_...` に差し替え済み(Production ほか)
+- 巻き戻し: この commit を revert + Vercel env を旧 anon JWT に戻す
