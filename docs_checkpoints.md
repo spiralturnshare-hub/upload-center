@@ -170,3 +170,33 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
 - **対象外**: Step1 は既に個別実装済み(見た目は共通バナーと同一)。Step6(タコ)は必須項目なしでブロックなし。Step8 は「送信」で別処理。
 - ビルド OK(`tsc` は既存の Home.tsx/streamdown エラーのみ、`vite build` 成功)。
 - 巻き戻し: この commit を revert(DB 変更なし)
+
+---
+
+## 2026-09-04: アカウント情報のDB永続化 + 注文一覧(必要/中断/完了)をGreenに接続
+
+- commit `ec7178b`(変更前 HEAD `c4319ac`)/ 本番 https://upload-center-murex.vercel.app / 新バンドル `index-IM71GEpx.js`(Ready 検証済)
+- 変更: `lib/supabase.ts` / `contexts/UploadContext.tsx` / `pages/{AccountProfilePage,HomePage,Step1VideoPage,Step2PhotoPage}.tsx` / **新規** `pages/OrderListPage.tsx` / `App.tsx`。**DB スキーマ変更なし**(`public.users`/`orders`/`uploads` 既存カラムのみ)。
+
+### アカウント情報
+- 従来 `AccountProfilePage` は `setAccountProfile(form)` = React state のみ → リロード/再サインインで消失(冨永社長指摘)。
+- `fetchMyProfile()`/`saveMyProfile()` を追加し `public.users`(氏名/カナ/電話/住所各列)に read/update。RLS `users_select_own`/`users_update_own`(migration 008)経由。
+- `UploadContext` の auth 監視で `isLoggedIn`/`userEmail` をセッションから復元(従来はリロードでログアウト表示になっていた)+ サインイン時に `reloadAccountProfile()`。
+- ⚠️ 氏名マッピング注意: AccountProfile `firstName`=姓 ↔ `users.last_name` / `lastName`=名 ↔ `users.first_name`(このアプリ独自命名。`profileToRow`/`rowToProfile` にコメント)。
+
+### 注文一覧(決済↔アップロード連動の UI 配線)
+- `fetchOrderDashboard()` = `orders`(`customer_email` = セッションメール、`status IN ('confirmed','processing','completed')`)を `uploads.status` で3分類:
+  - needing = 完了アップロード無し / in-progress = `uploads.status='draft'` 行あり / completed = `submitted`|`done`。
+- `HomePage` の4カードをハードコード(`count={2}`/`onClick={()=>{}}`)から実件数 + `OrderListPage` 遷移へ。「代理アップロードが必要な注文」カードは仕様外につき削除。
+- `OrderListPage`(新規): モード別リスト。needing →「(insole1・insole2)のアップロードが必要です」+ `initUploadSession` でウィザード / in-progress →「続きから再開」/ completed →「内容の確認・修正」= 既存 `EditUploadPage`(改訂履歴 RPC `update_upload_with_history`/`replace_upload_file`・工程開始後ロック)。
+
+### 途中から再開
+- `UploadContext.resumeUploadSession(uploadId)` = `uploads` の JSON 各列 + `uploads_files(is_current)` を `UploadData` へ復元、既存 `uploadId` で `step1` へ。
+- `Step1VideoPage`/`Step2PhotoPage` = 再開時 context のアップロード済みフラグから表示状態を `'success'` 初期化(カードが「済み」表示になる)。
+
+### 未検証(冨永社長の実機テスト待ち・2026-09-04 時点)
+- `orders` RLS の email 層で顧客が自分の注文を SELECT できるか(できないと注文一覧が全て0件)。
+- `saveMyProfile` の `users` UPDATE が RLS で通るか。
+- 再開時の Step3〜7(靴情報/痛み/目的/配送先)への JSON 復元の見え方。
+- テスト用に E2E モック注文3件を冨永社長のサインインメールに紐付け済み(`ST-E2E-0001`=完了 / `EM-E2E-0001`=中断 / `NEEDS-E2E-0001`=必要)。`e2e_mock_customer_rollback.sql` で撤去可。
+- 巻き戻し: この commit を revert(DB スキーマ変更なし。テスト注文は上記 rollback)

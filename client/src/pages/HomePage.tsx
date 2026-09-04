@@ -1,27 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, CheckCircle2, PauseCircle, Shield, LogOut, User, ChevronRight, QrCode, Settings2 } from 'lucide-react';
+import { Upload, CheckCircle2, PauseCircle, Shield, LogOut, User, ChevronRight, QrCode } from 'lucide-react';
 import { useUpload } from '@/contexts/UploadContext';
 import type { OrderListMode } from '@/contexts/UploadContext';
-import PinkButton from '@/components/PinkButton';
-import InsoleSelector from '@/components/InsoleSelector';
-import PreShootingDialog from '@/components/PreShootingDialog';
-import type { InsoleKind } from '@/lib/insoleConfig';
-import { INSOLE_DISPLAY_NAMES } from '@/lib/insoleConfig';
 import { fetchOrderDashboard, supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
 
 // ============================================================
 // Design: ビビッド・フォーム
 // HomePage: アップロードセンター ホーム画面
 // Primary: PANTONE Pink C (#D62598)
-// Layout order:
+// Layout order（2026-09-04 冨永社長指示で整理）:
 //   1. アカウント（最上部）
-//   2. データアップロード（ヒーローバナー）
-//   3. インソール種別選択
-//   4. 注文一覧（ログイン時）
-//   5. 決済完了IDでアップロード / ゲストアップロード（注文一覧の下）
-//   6. サービス
-//   7. お知らせ
+//   2. アップロードが必要な注文（ログイン時）
+//   3. アップロードを中断した注文
+//   4. アップロードが完了した注文
+//   5. クイックアクション（決済完了IDでアップロード / ゲストアップロード）
+//   6. お知らせ
+// ※ 旧「データアップロード」ヒーローバナーと「インソール種別の選択」は削除。
+//   このシステムは原則「決済に紐付いた注文」からアップロードする。決済に
+//   紐付かないアップロードは「ゲストアップロード」に集約し、インソール種別
+//   選択もゲストアップロードのフロー内で行う（GuestUploadPage の insole-select）。
 // ============================================================
 
 const LOGO_URL = '/manus-storage/oios_logo_1158292d.png';
@@ -64,9 +61,7 @@ function OrderCard({ icon, title, subtitle, count, onClick }: OrderCardProps) {
 }
 
 export default function HomePage() {
-  const { isLoggedIn, setIsLoggedIn, setCurrentPage, uploadData, updateUploadData, accountProfile, isProfileRegistered, initUploadSession, setOrderListMode } = useUpload();
-  const [showInsoleSelector, setShowInsoleSelector] = useState(false);
-  const [showPreShootingDialog, setShowPreShootingDialog] = useState(false);
+  const { isLoggedIn, setIsLoggedIn, setCurrentPage, accountProfile, isProfileRegistered, setOrderListMode } = useUpload();
 
   // 注文一覧の件数(決済済み注文 × アップロード状態の突合)
   const [counts, setCounts] = useState<{ needing: number; inProgress: number; completed: number } | null>(null);
@@ -89,33 +84,6 @@ export default function HomePage() {
     setCurrentPage('order-list');
   };
 
-  const handleInsoleChange = (insoles: InsoleKind[]) => {
-    updateUploadData({ selectedInsoles: insoles });
-  };
-
-  const handleStartUpload = () => {
-    if (uploadData.selectedInsoles.length === 0) {
-      setShowInsoleSelector(true);
-      return;
-    }
-    setShowPreShootingDialog(true);
-  };
-
-  const handlePreShootingConfirm = async () => {
-    setShowPreShootingDialog(false);
-    try {
-      // uploadId 生成 + uploads 行を draft で先に作成(FK対策)
-      await initUploadSession({ selectedInsoles: uploadData.selectedInsoles });
-      setCurrentPage('step1');
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'アップロードの開始に失敗しました。再ログインしてお試しください。');
-    }
-  };
-
-  const handleGuestUpload = () => {
-    setCurrentPage('signin');
-  };
-
   const handleSignIn = () => {
     setCurrentPage('signin');
   };
@@ -123,13 +91,6 @@ export default function HomePage() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     setIsLoggedIn(false);
-  };
-
-  const handleConfirmInsoleAndStart = () => {
-    if (uploadData.selectedInsoles.length > 0) {
-      setShowInsoleSelector(false);
-      setShowPreShootingDialog(true);
-    }
   };
 
   return (
@@ -222,102 +183,7 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* ② データアップロード ヒーローバナー */}
-        <div
-          className="rounded-2xl p-5 text-white overflow-hidden relative"
-          style={{ background: 'linear-gradient(135deg, #D62598 0%, #a81b77 100%)' }}
-        >
-          <div className="relative z-10">
-            <p className="text-xs font-medium opacity-80 mb-1">オーダーメイドインソール注文システム</p>
-            <h2 className="text-xl font-bold leading-tight mb-2">
-              データアップロード
-            </h2>
-            <p className="text-xs opacity-80 leading-relaxed mb-4">
-              ご注文のインソール作製に必要な<br />
-              データをアップロードしてください
-            </p>
-            <PinkButton
-              variant="primary"
-              size="sm"
-              onClick={handleStartUpload}
-              className="bg-white text-[#D62598] hover:bg-gray-50"
-              style={{ background: 'white', color: '#D62598' }}
-            >
-              <Upload className="w-4 h-4" />
-              アップロードを開始
-            </PinkButton>
-          </div>
-          {/* Decorative circles */}
-          <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full opacity-20" style={{ backgroundColor: 'white' }} />
-          <div className="absolute -right-4 -bottom-12 w-40 h-40 rounded-full opacity-10" style={{ backgroundColor: 'white' }} />
-        </div>
-
-        {/* ③ インソール種別選択パネル */}
-        <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden" style={{ borderColor: '#D62598' }}>
-          <button
-            onClick={() => setShowInsoleSelector(!showInsoleSelector)}
-            className="w-full flex items-center justify-between px-4 py-3"
-          >
-            <div className="flex items-center gap-2">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: '#FCE4F4' }}
-              >
-                <Settings2 className="w-4 h-4" style={{ color: '#D62598' }} />
-              </div>
-              <div className="text-left">
-                <p className="text-sm font-bold text-gray-800">インソール種別の選択</p>
-                <p className="text-xs text-gray-400">
-                  {uploadData.selectedInsoles.length === 0
-                    ? '種別を選択してください（必須）'
-                    : uploadData.selectedInsoles.map(k => INSOLE_DISPLAY_NAMES[k]).join(' + ')}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {uploadData.selectedInsoles.length > 0 && (
-                <span
-                  className="text-xs font-bold text-white rounded-full w-5 h-5 flex items-center justify-center"
-                  style={{ backgroundColor: '#D62598' }}
-                >
-                  {uploadData.selectedInsoles.length}
-                </span>
-              )}
-              <ChevronRight
-                className="w-4 h-4 text-gray-400 transition-transform duration-200"
-                style={{ transform: showInsoleSelector ? 'rotate(90deg)' : 'rotate(0deg)' }}
-              />
-            </div>
-          </button>
-
-          {showInsoleSelector && (
-            <div className="px-4 pb-4 space-y-4 border-t border-gray-100">
-              <div className="pt-3">
-                <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                  ご注文のインソール種別を選択してください。<br />
-                  2種類セットの場合は2つ選択できます。
-                </p>
-                <InsoleSelector
-                  value={uploadData.selectedInsoles}
-                  onChange={handleInsoleChange}
-                  maxCount={2}
-                />
-              </div>
-              {uploadData.selectedInsoles.length > 0 && (
-                <PinkButton
-                  size="md"
-                  onClick={handleConfirmInsoleAndStart}
-                  className="w-full"
-                >
-                  <Upload className="w-4 h-4" />
-                  この種別でアップロードを開始
-                </PinkButton>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ④ 注文一覧（ログイン時のみ） */}
+        {/* ② 注文一覧（ログイン時のみ） */}
         {isLoggedIn && (
           <div className="space-y-2">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1">
@@ -388,7 +254,7 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ⑤ 決済完了IDでアップロード / ゲストアップロード（注文一覧の下） */}
+        {/* ③ クイックアクション（決済完了IDでアップロード / ゲストアップロード） */}
         <div className="space-y-2">
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1">
             クイックアクション
@@ -425,7 +291,7 @@ export default function HomePage() {
 
 
 
-        {/* ⑦ お知らせ */}
+        {/* ④ お知らせ */}
         <div
           className="rounded-xl p-4 text-xs leading-relaxed"
           style={{ backgroundColor: '#FCE4F4', color: '#a81b77' }}
@@ -433,13 +299,6 @@ export default function HomePage() {
           ※ 決済が完了している場合、「決済完了IDでアップロード」からデータのアップロードを行ってください。
         </div>
       </main>
-
-      {/* 事前撮影確認ダイアログ */}
-      <PreShootingDialog
-        open={showPreShootingDialog}
-        onClose={() => setShowPreShootingDialog(false)}
-        onConfirm={handlePreShootingConfirm}
-      />
     </div>
   );
 }
