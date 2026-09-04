@@ -4,6 +4,7 @@
 // ============================================================
 import { createClient } from '@supabase/supabase-js';
 import type { AccountProfile } from '@/contexts/UploadContext';
+import { kindLabel } from '@/lib/kindLabels';
 
 // 2026-09-04: Legacy anon JWT のハードコード fallback を撤去(docs/35 WS-B / docs/36 §2)。
 //   Green の Legacy JWT Secret 露出の是正で新 API キー体系へ移行。旧 anon JWT をソース・git 履歴に残さない。
@@ -564,11 +565,21 @@ export interface DashboardInProgress extends DashboardOrder {
   uploadStartedAt: string | null;   // アップロード開始日時(uploads.created_at)
   interruptedAt: string | null;     // 中断日時 ≒ 最後に操作した日時(uploads.updated_at)
 }
+// アップロード完了後の修正1件(upload_revisions 1行に対応)。
+// 完了カードに「修正日時 + 何を修正したか」を古い順に積んで表示する(冨永社長 2026-09-04)。
+export interface UploadRevisionEntry {
+  revisionNumber: number;
+  at: string | null;                // 修正日時(upload_revisions.created_at)
+  label: string;                    // 何を修正したか(例: 「スイングの動画」「靴情報 ほか」)
+  byType: string | null;            // 'customer' | 'staff'
+  isFileReplace: boolean;           // 写真・動画の差し替えなら true
+}
 export interface DashboardCompleted extends DashboardOrder {
   uploadId: string;
   uploadStatus: string | null;
   uploadStartedAt: string | null;   // アップロード開始日時(uploads.created_at)
   completedAt: string | null;       // 完了日時 ≒ 提出時の更新日時(uploads.updated_at)
+  revisions: UploadRevisionEntry[]; // 完了後の修正ログ(古い順)。無ければ []
 }
 export interface OrderDashboard {
   needing: DashboardOrder[];
@@ -577,6 +588,50 @@ export interface OrderDashboard {
 }
 
 const PAID_STATUSES = ['confirmed', 'processing', 'completed'];
+
+// ============================================================
+// upload_revisions を uploadId 単位でまとめて取得(完了カードの修正ログ用)。
+//   - snapshot.file_replaced があれば写真/動画の差し替え → kind を日本語ラベル化
+//   - それ以外は update_upload_with_history 由来(靴情報・目的・顧客情報などの修正)
+//   古い順(revision_number 昇順)で返す = カードでは上から順に積み上がる。
+//   RLS(upload_revisions_select_own)が通らない環境でも例外にせず空で返す。
+// ============================================================
+export async function fetchUploadRevisions(
+  uploadIds: string[],
+): Promise<Map<string, UploadRevisionEntry[]>> {
+  const out = new Map<string, UploadRevisionEntry[]>();
+  const ids = Array.from(new Set(uploadIds.filter(Boolean)));
+  if (ids.length === 0) return out;
+
+  const { data, error } = await supabase
+    .from('upload_revisions')
+    .select('upload_id, revision_number, snapshot, change_reason, changed_by_type, created_at')
+    .in('upload_id', ids)
+    .order('revision_number', { ascending: true });
+  if (error) {
+    console.warn('[fetchUploadRevisions] 読み込み失敗(表示は省略):', error.message);
+    return out;
+  }
+
+  for (const r of data ?? []) {
+    const snap = (r.snapshot ?? {}) as Record<string, unknown>;
+    const fileKind = typeof snap.file_replaced === 'string' ? (snap.file_replaced as string) : null;
+    const label = fileKind
+      ? kindLabel(fileKind)
+      : (r.change_reason && String(r.change_reason).trim()) || '注文情報の修正';
+    const entry: UploadRevisionEntry = {
+      revisionNumber: r.revision_number as number,
+      at: (r.created_at as string) ?? null,
+      label,
+      byType: (r.changed_by_type as string) ?? null,
+      isFileReplace: Boolean(fileKind),
+    };
+    const arr = out.get(r.upload_id as string) ?? [];
+    arr.push(entry);
+    out.set(r.upload_id as string, arr);
+  }
+  return out;
+}
 
 export async function fetchOrderDashboard(): Promise<OrderDashboard> {
   const empty: OrderDashboard = { needing: [], inProgress: [], completed: [] };
@@ -645,7 +700,7 @@ export async function fetchOrderDashboard(): Promise<OrderDashboard> {
       if (done) {
         out.completed.push({
           ...base, uploadId: done.id, uploadStatus: done.status,
-          uploadStartedAt: done.created_at, completedAt: done.updated_at,
+          uploadStartedAt: done.created_at, completedAt: done.updated_at, revisions: [],
         });
       } else if (draft) {
         out.inProgress.push({
@@ -682,7 +737,7 @@ export async function fetchOrderDashboard(): Promise<OrderDashboard> {
       if (u.status === 'submitted' || u.status === 'done') {
         out.completed.push({
           ...base, uploadId: u.id, uploadStatus: u.status,
-          uploadStartedAt: u.created_at, completedAt: u.updated_at,
+          uploadStartedAt: u.created_at, completedAt: u.updated_at, revisions: [],
         });
       } else if (u.status === 'draft') {
         out.inProgress.push({
@@ -703,6 +758,14 @@ export async function fetchOrderDashboard(): Promise<OrderDashboard> {
   out.completed.sort(
     (a, b) => ts(b.completedAt ?? b.uploadStartedAt ?? b.createdAt) - ts(a.completedAt ?? a.uploadStartedAt ?? a.createdAt),
   );
+
+  // 完了カードに「完了後の修正ログ」を添付(古い順)。失敗しても一覧自体は返す。
+  try {
+    const revMap = await fetchUploadRevisions(out.completed.map(c => c.uploadId));
+    out.completed.forEach(c => { c.revisions = revMap.get(c.uploadId) ?? []; });
+  } catch (e) {
+    console.warn('[fetchOrderDashboard] 修正ログの取得に失敗(表示は省略):', e);
+  }
 
   return out;
 }

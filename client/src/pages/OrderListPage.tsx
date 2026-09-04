@@ -267,10 +267,33 @@ export default function OrderListPage() {
             {/* 完了した注文 */}
             {showCompleted && completedRows.map((o) => (
               <OrderRow key={o.id} o={o}>
-                <DateRows rows={[
-                  { label: 'アップロード開始', value: o.uploadStartedAt },
-                  { label: '完了日時', value: o.completedAt },
-                ]} />
+                <div className="rounded-lg bg-gray-50 px-3 py-2 text-[11px] text-gray-500 space-y-0.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span>アップロード開始</span>
+                    <span className="font-medium text-gray-700 tabular-nums">{fmtDT(o.uploadStartedAt)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span>アップロード完了日時</span>
+                    <span className="font-medium text-gray-700 tabular-nums">{fmtDT(o.completedAt)}</span>
+                  </div>
+                  {/* 完了後の修正ログ(古い順に積み上がる・冨永社長ルール 2026-09-04) */}
+                  {o.revisions.length > 0 && (
+                    <div className="pt-1.5 mt-1 border-t border-gray-200 space-y-1.5">
+                      {o.revisions.map((r) => (
+                        <div key={r.revisionNumber}>
+                          <div className="flex items-center justify-between gap-2">
+                            <span>修正日時</span>
+                            <span className="font-medium text-gray-700 tabular-nums">{fmtDT(r.at)}</span>
+                          </div>
+                          <div className="pl-2 text-gray-600">
+                            {r.label}
+                            {r.byType === 'staff' && <span className="text-gray-400">（スタッフ対応）</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <PinkButton size="md" variant="outline" className="w-full" onClick={() => openEdit(o)}>
                   <CheckCircle2 className="w-4 h-4" />
                   アップロード内容の確認・修正

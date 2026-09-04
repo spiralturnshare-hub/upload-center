@@ -28,24 +28,10 @@ import {
   uploadFileToStorage,
   type UploadFullRecord,
 } from '@/lib/supabase';
+import { kindLabel } from '@/lib/kindLabels';
 
 const PINK = '#2563EB';
 const inputClass = 'w-full h-11 px-3 rounded-xl border-2 border-gray-200 text-sm focus:outline-none transition-colors';
-
-// uploads_files.kind → 顧客に見せる日本語ラベル(英語では出さない・冨永社長 2026-09-04)
-const KIND_LABEL_JP: Record<string, string> = {
-  walk: '歩きの動画',
-  oneleg: '片足立ち動画',
-  sidejump: 'サイドジャンプ動画',
-  running: 'ランニング動画',
-  swing: 'スイングの動画',
-  foot: '足の写真',
-  shoes: '靴の写真',
-  pain_photo: '痛み・違和感の写真',
-  tako_photo: 'タコ・魚の目の写真',
-  other: 'その他のデータ',
-};
-const kindLabel = (kind: string | null) => (kind ? KIND_LABEL_JP[kind] ?? kind : 'データ');
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
