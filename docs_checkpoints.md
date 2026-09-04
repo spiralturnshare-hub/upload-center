@@ -213,3 +213,18 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
 - ログインしていない場合は「注文一覧」セクション非表示 → アカウント(サインイン誘導) → クイックアクション → 注意書き。
 - 未使用化した import/handler/state を除去(`InsoleSelector`/`PreShootingDialog`/`handleStartUpload`/`handlePreShootingConfirm`/`handleConfirmInsoleAndStart`/`handleInsoleChange`/`showInsoleSelector`/`showPreShootingDialog`)。
 - ビルド OK。DB 変更なし。巻き戻し = revert `54bf2b1`。
+
+---
+
+## 2026-09-04: HomePage ヘッダー刷新 + 注文一覧の見せ方調整(冨永社長指示)
+
+- commit は次の push で確定。変更前 HEAD `54bf2b1`(相当)。本番 https://upload-center-murex.vercel.app
+- **ヘッダー**: 縦積み・中央揃えに。ロゴ(中央) → 「アップロードセンター」(中央) → 行: [アカウント情報](ピンク枠ボタン・未登録なら小さいドット) + [サインアウト](小・灰)。従来は左に「ロゴ+アップロードセンター」、右に大きめサインアウト。
+- **ロゴ画像**: 旧 `/manus-storage/oios_logo_1158292d.png`(Manus 期の死んだパス・?表示)を廃止。`client/public/oios-logo.svg`(仮 OIOS ロゴ・ピンクの円環+「OIOS」ワードマーク)を新設し `LOGO_URL='/oios-logo.svg'` に。**正式な OIOS 画像を同じパス(`.svg` か `.png`)に置けば差し替わる**(コード変更不要。png なら `LOGO_URL` の拡張子だけ変更)。CompletePage/Step3/Step6 も旧パス参照が残っている(別途)。
+- **本文からアカウントバナー削除**(ヘッダーに移動)。
+- **注文一覧の並びと強調**:
+  - 「アップロードが必要な注文」を最上部・`tone="primary"`(ピンク枠2px + 薄ピンク背景 `#FFF0F9` + 一回り大きい + ピンクの丸+数字)。
+  - 「アップロードを中断した注文」= 通常カード + ピンクの丸+数字(アップロードを促す対象)。
+  - 「アップロードが完了した注文」= 目立たせない。アイコン灰・**ピンクの丸をやめ灰色の数字のみ**で件数表示。保証・サービス行も灰トーンに。
+- **セクション名変更**: 「クイックアクション」→ **「その他のアップロード」**。
+- ビルド OK。DB 変更なし。巻き戻し = 次コミットを revert。
