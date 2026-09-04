@@ -30,20 +30,22 @@ const PINK_BG = '#FCE4F4';
 const BEIGE_BG = '#FAF6EE';
 const BEIGE_BORDER = '#ECE3D3';
 
-const HELP_TEXT: Record<'id' | 'guest', { title: string; body: string }> = {
+const HELP_TEXT: Record<'id' | 'guest', { title: string; paragraphs: string[] }> = {
   id: {
-    title: '決済完了IDとは',
-    body:
-      'ご注文の決済が完了すると、登録メールアドレスに「決済完了ID(注文番号)」が届きます。' +
-      'サインインせずにアップロードしたいとき、または注文が一覧に出てこないときに、' +
-      'このIDを入力してアップロードを開始できます。',
+    title: '決済完了IDでアップロードとは？',
+    paragraphs: [
+      '決済した本人以外の方が、代わりにデータをアップロードできる機能です。',
+      '決済後に届くメールの「決済完了ID」を入力するだけで、決済情報に紐づけてアップロードできます。',
+      'スマホ操作が苦手な方や、取扱店による代行アップロードに便利です。',
+    ],
   },
   guest: {
-    title: 'ゲストアップロードとは',
-    body:
-      '決済がまだ完了していない、決済完了IDが見当たらない、どの入口を使えばよいか分からない — ' +
-      'そんなときの入口です。決済記録と紐付けずに、インソールの種類をご自身で選んでアップロードできます' +
-      '(サインインは必要です)。',
+    title: 'ゲストアップロードとは？',
+    paragraphs: [
+      '通常のアップロードができない場合に使用する緊急用のアップロード機能です。',
+      '決済済みの場合は、必ず「通常アップロード」または「決済完了IDでアップロード」を優先してください。',
+      'ゲストアップロードでは決済情報との紐づけに時間がかかり、納期が遅れる場合があります。',
+    ],
   },
 };
 
@@ -275,26 +277,38 @@ export default function HomePage() {
         </div>
       </main>
 
-      {/* ヘルプのポップアップ */}
+      {/* ヘルプのポップアップ(「?」タップ時のみ・閉じるで元の画面へ) */}
       {help && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-5"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-5"
           onClick={() => setHelp(null)}
+          role="dialog"
+          aria-modal="true"
         >
           <div
-            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
+            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3">
-              <h4 className="text-sm font-bold text-gray-800">{HELP_TEXT[help].title}</h4>
-              <button onClick={() => setHelp(null)} className="text-gray-400 hover:text-gray-600 -mt-0.5" aria-label="閉じる">
-                <X className="w-4 h-4" />
+              <h4 className="text-[15px] font-bold text-gray-900 leading-snug">{HELP_TEXT[help].title}</h4>
+              <button
+                onClick={() => setHelp(null)}
+                className="flex-shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                aria-label="閉じる"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="mt-2 text-xs leading-relaxed text-gray-600">{HELP_TEXT[help].body}</p>
+
+            <div className="mt-3 space-y-3.5">
+              {HELP_TEXT[help].paragraphs.map((para, i) => (
+                <p key={i} className="text-[13px] leading-7 text-gray-600">{para}</p>
+              ))}
+            </div>
+
             <button
               onClick={() => setHelp(null)}
-              className="mt-4 w-full rounded-xl py-2.5 text-sm font-semibold text-white"
+              className="mt-5 w-full rounded-xl py-3 text-sm font-semibold text-white active:scale-[0.98] transition-transform"
               style={{ backgroundColor: PINK }}
             >
               閉じる
