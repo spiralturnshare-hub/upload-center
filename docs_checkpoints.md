@@ -264,3 +264,21 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
 - 01c3836: ヘルプ本文「決済した本人以外の方が」→「決済したご本人様以外の方が」。
 - 5f61b14: 「その他のアップロード」セクションに pt-5 追加し、保証・サービスとの縦間隔を約2倍に。
 - すべてビルド OK・DB 変更なし。Vercel が当日混雑で反映遅延。巻き戻しは各 commit revert。
+
+## 2026-09-04: 注文に紐付かないアップロード(ゲスト等)を注文一覧に表示
+
+- 症状: ゲストアップロードを完了しても「アップロードが完了した注文」に出ない。
+- 原因: `fetchOrderDashboard` が `orders`(決済済み)起点で `uploads` を突合していたため、
+  `order_id IS NULL` のアップロード(ゲスト / ホームから開始)がどのバケットにも入らなかった。
+- 修正:
+  - `lib/supabase.ts` `fetchOrderDashboard`: セクションB を追加。`uploads` を
+    `user_id = 自分 AND order_id IS NULL` で取得し、status で completed / inProgress に振り分け。
+    `DashboardOrder` に `orderId: string|null`(実注文ID)と `isGuest` を追加。
+  - `fetchUploadById(uploadId)` を新設。`UploadFullRecord` に `guest_tf` 追加。
+  - `UploadContext`: `editUploadId`(注文ではなく upload ID で EditUploadPage を開く)を追加。
+  - `EditUploadPage`: `editUploadId` があれば `fetchUploadById` で直接ロード(なければ従来どおり注文IDから)。
+    ヘッダー表記を「注文番号: X」/「ゲストアップロード」/「注文番号なし」に。
+  - `OrderListPage`: `openEdit` は実注文なら `setOrderId`、注文なしなら `setEditUploadId(uploadId)`。
+    `startNew`/`resume` は `o.orderId`(null 可)を渡すよう修正(旧: `o.id` を注文IDとして誤用)。
+    カード表記に「ゲストアップロード」を追加。
+- ビルド OK。DB 変更なし。

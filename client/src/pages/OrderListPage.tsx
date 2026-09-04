@@ -53,7 +53,7 @@ export default function OrderListPage() {
   const {
     orderListMode, setCurrentPage,
     initUploadSession, resumeUploadSession,
-    setOrderId, setOrderName,
+    setOrderId, setOrderName, setEditUploadId,
   } = useUpload();
 
   const [loading, setLoading] = useState(true);
@@ -95,7 +95,7 @@ export default function OrderListPage() {
     setBusyId(o.id);
     try {
       await initUploadSession({
-        orderId: o.id,
+        orderId: o.orderId ?? undefined,
         orderName: o.orderName ?? undefined,
         selectedInsoles: o.insoleKinds as InsoleKind[],
       });
@@ -110,7 +110,10 @@ export default function OrderListPage() {
   const resume = async (o: DashboardInProgress) => {
     setBusyId(o.id);
     try {
-      await resumeUploadSession(o.uploadId, { orderId: o.id, orderName: o.orderName ?? undefined });
+      await resumeUploadSession(o.uploadId, {
+        orderId: o.orderId ?? undefined,
+        orderName: o.orderName ?? undefined,
+      });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : '再開できませんでした');
     } finally {
@@ -119,8 +122,16 @@ export default function OrderListPage() {
   };
 
   const openEdit = (o: DashboardCompleted) => {
-    setOrderId(o.id);
-    setOrderName(o.orderName ?? '');
+    if (o.orderId) {
+      // 実注文: 注文IDで開く
+      setEditUploadId(null);
+      setOrderId(o.orderId);
+      setOrderName(o.orderName ?? '');
+    } else {
+      // 注文に紐付かない(ゲスト等): upload ID で直接開く
+      setEditUploadId(o.uploadId);
+      setOrderName('');
+    }
     setCurrentPage('edit-upload');
   };
 
@@ -132,7 +143,9 @@ export default function OrderListPage() {
           {insoleLabel(o.insoleKinds)}
           {o.roomShoes ? '（＋ルームシューズ）' : ''}
         </p>
-        <p className="text-xs text-gray-400 mt-0.5">注文番号: {o.orderName ?? '—'}</p>
+        <p className="text-xs text-gray-400 mt-0.5">
+          {o.orderName ? `注文番号: ${o.orderName}` : o.isGuest ? 'ゲストアップロード' : '注文番号なし'}
+        </p>
       </div>
       {children}
     </div>

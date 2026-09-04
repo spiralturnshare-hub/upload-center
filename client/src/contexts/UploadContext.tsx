@@ -145,6 +145,9 @@ interface UploadContextType {
   setOrderId: (v: string) => void;
   orderName: string;
   setOrderName: (v: string) => void;
+  // EditUploadPage を「注文ではなく upload ID で開く」ためのフック(注文なしのゲストアップロード等)
+  editUploadId: string | null;
+  setEditUploadId: (v: string | null) => void;
   userId: string | null;          // auth.users.id (= auth.uid())
   customerId: string | null;      // public.users.id(= 顧客ID。uploads.user_id はこれ)
   /**
@@ -226,6 +229,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   const [isGuestUpload, setIsGuestUpload] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [orderName, setOrderName] = useState('');
+  const [editUploadId, setEditUploadId] = useState<string | null>(null);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
@@ -401,6 +405,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
       isGuestUpload, setIsGuestUpload,
       orderId, setOrderId,
       orderName, setOrderName,
+      editUploadId, setEditUploadId,
       userId,
       customerId,
       initUploadSession,

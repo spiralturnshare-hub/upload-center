@@ -272,6 +272,7 @@ export interface UploadFullRecord {
   order_name: string | null;
   selected_insoles: string[] | null;
   status: string | null;
+  guest_tf: boolean | null;
   insole_user_name: string | null;
   insole_user_kana: string | null;
   room_color: string | null;
@@ -288,6 +289,17 @@ export async function fetchUploadByOrderId(orderId: string): Promise<UploadFullR
     .from('uploads')
     .select('*')
     .eq('order_id', orderId)
+    .maybeSingle();
+  if (error) return null;
+  return data as UploadFullRecord | null;
+}
+
+/** upload ID で直接取得(注文に紐付かないゲストアップロード等の確認・修正用) */
+export async function fetchUploadById(uploadId: string): Promise<UploadFullRecord | null> {
+  const { data, error } = await supabase
+    .from('uploads')
+    .select('*')
+    .eq('id', uploadId)
     .maybeSingle();
   if (error) return null;
   return data as UploadFullRecord | null;
@@ -508,12 +520,14 @@ export async function saveMyProfile(profile: AccountProfile): Promise<void> {
 //   「決済済み」= orders.status IN ('confirmed','processing','completed')
 // ============================================================
 export interface DashboardOrder {
-  id: string;
+  id: string;                   // React key。実注文なら注文ID、注文なし(ゲスト等)なら uploadId
+  orderId: string | null;       // 実注文ID。注文に紐付かないアップロードは null
   orderName: string | null;
   status: string | null;
   createdAt: string | null;
   insoleKinds: string[];        // ['walk','room'] 等。表示は「歩き用・ルーム用のアップロードが必要です」
   roomShoes: boolean;
+  isGuest: boolean;             // ゲストアップロード(uploads.guest_tf)
 }
 export interface DashboardInProgress extends DashboardOrder {
   uploadId: string;
@@ -537,7 +551,25 @@ export async function fetchOrderDashboard(): Promise<OrderDashboard> {
   const myCustomerId = await fetchMyCustomerId();
   if (!email && !myCustomerId) return empty;
 
-  // 1) 自分の決済済み注文
+  const out: OrderDashboard = { needing: [], inProgress: [], completed: [] };
+  const kindsByUpload = new Map<string, Set<string>>();
+
+  // draft の uploads のファイル種別を埋めるヘルパー(進捗表示用)
+  const loadKinds = async (uploadIds: string[]) => {
+    if (!uploadIds.length) return;
+    const { data: ufs } = await supabase
+      .from('uploads_files')
+      .select('upload_id, kind')
+      .in('upload_id', uploadIds)
+      .eq('is_current', true);
+    (ufs ?? []).forEach(f => {
+      const set = kindsByUpload.get(f.upload_id) ?? new Set<string>();
+      if (f.kind) set.add(f.kind);
+      kindsByUpload.set(f.upload_id, set);
+    });
+  };
+
+  // ========== A) 決済済み注文 × その uploads ==========
   let oq = supabase
     .from('orders')
     .select('id, order_name, insole1_kind, insole2_kind, room_shoes, status, created_at')
@@ -547,63 +579,76 @@ export async function fetchOrderDashboard(): Promise<OrderDashboard> {
   const { data: orders, error: oErr } = await oq;
   if (oErr) throw oErr;
   const list = orders ?? [];
-  if (list.length === 0) return empty;
 
-  // 2) それらの注文に紐づく uploads
-  const orderIds = list.map(o => o.id);
-  const { data: ups } = await supabase
-    .from('uploads')
-    .select('id, order_id, status, updated_at')
-    .in('order_id', orderIds);
-  const upByOrder = new Map<string, { id: string; status: string | null; updated_at: string | null }[]>();
-  (ups ?? []).forEach(u => {
-    if (!u.order_id) return;
-    const arr = upByOrder.get(u.order_id) ?? [];
-    arr.push(u);
-    upByOrder.set(u.order_id, arr);
-  });
-
-  // 3) draft の uploads のファイル種別(進捗表示用)
-  const draftIds = (ups ?? []).filter(u => u.status === 'draft').map(u => u.id);
-  const kindsByUpload = new Map<string, Set<string>>();
-  if (draftIds.length) {
-    const { data: ufs } = await supabase
-      .from('uploads_files')
-      .select('upload_id, kind')
-      .in('upload_id', draftIds)
-      .eq('is_current', true);
-    (ufs ?? []).forEach(f => {
-      const set = kindsByUpload.get(f.upload_id) ?? new Set<string>();
-      if (f.kind) set.add(f.kind);
-      kindsByUpload.set(f.upload_id, set);
+  if (list.length > 0) {
+    const orderIds = list.map(o => o.id);
+    const { data: ups } = await supabase
+      .from('uploads')
+      .select('id, order_id, status, guest_tf, updated_at')
+      .in('order_id', orderIds);
+    const upByOrder = new Map<string, { id: string; status: string | null; guest_tf: boolean | null }[]>();
+    (ups ?? []).forEach(u => {
+      if (!u.order_id) return;
+      const arr = upByOrder.get(u.order_id) ?? [];
+      arr.push(u);
+      upByOrder.set(u.order_id, arr);
     });
-  }
+    await loadKinds((ups ?? []).filter(u => u.status === 'draft').map(u => u.id));
 
-  const out: OrderDashboard = { needing: [], inProgress: [], completed: [] };
-  for (const o of list) {
-    const base: DashboardOrder = {
-      id: o.id,
-      orderName: o.order_name,
-      status: o.status,
-      createdAt: o.created_at,
-      insoleKinds: [o.insole1_kind, o.insole2_kind].filter(Boolean) as string[],
-      roomShoes: Boolean(o.room_shoes),
-    };
-    const us = upByOrder.get(o.id) ?? [];
-    const done = us.find(u => u.status === 'submitted' || u.status === 'done');
-    const draft = us.find(u => u.status === 'draft');
-    if (done) {
-      out.completed.push({ ...base, uploadId: done.id, uploadStatus: done.status });
-    } else if (draft) {
-      out.inProgress.push({
-        ...base,
-        uploadId: draft.id,
-        uploadedKinds: Array.from(kindsByUpload.get(draft.id) ?? []),
-      });
-    } else {
-      out.needing.push(base);
+    for (const o of list) {
+      const base: DashboardOrder = {
+        id: o.id,
+        orderId: o.id,
+        orderName: o.order_name,
+        status: o.status,
+        createdAt: o.created_at,
+        insoleKinds: [o.insole1_kind, o.insole2_kind].filter(Boolean) as string[],
+        roomShoes: Boolean(o.room_shoes),
+        isGuest: false,
+      };
+      const us = upByOrder.get(o.id) ?? [];
+      const done = us.find(u => u.status === 'submitted' || u.status === 'done');
+      const draft = us.find(u => u.status === 'draft');
+      if (done) {
+        out.completed.push({ ...base, uploadId: done.id, uploadStatus: done.status });
+      } else if (draft) {
+        out.inProgress.push({ ...base, uploadId: draft.id, uploadedKinds: Array.from(kindsByUpload.get(draft.id) ?? []) });
+      } else {
+        out.needing.push(base);
+      }
     }
   }
+
+  // ========== B) 注文に紐付かない自分のアップロード(ゲスト / ホームから開始) ==========
+  if (myCustomerId) {
+    const { data: orphans } = await supabase
+      .from('uploads')
+      .select('id, order_name, selected_insoles, status, guest_tf, created_at')
+      .eq('user_id', myCustomerId)
+      .is('order_id', null)
+      .order('created_at', { ascending: false });
+    await loadKinds((orphans ?? []).filter(u => u.status === 'draft').map(u => u.id));
+
+    for (const u of orphans ?? []) {
+      const base: DashboardOrder = {
+        id: u.id,
+        orderId: null,
+        orderName: u.order_name ?? null,
+        status: null,
+        createdAt: u.created_at,
+        insoleKinds: (u.selected_insoles ?? []) as string[],
+        roomShoes: false,
+        isGuest: Boolean(u.guest_tf),
+      };
+      if (u.status === 'submitted' || u.status === 'done') {
+        out.completed.push({ ...base, uploadId: u.id, uploadStatus: u.status });
+      } else if (u.status === 'draft') {
+        out.inProgress.push({ ...base, uploadId: u.id, uploadedKinds: Array.from(kindsByUpload.get(u.id) ?? []) });
+      }
+      // 注文なしの needing は概念上あり得ない(注文が無いのに「必要」とは言えない)ので無視
+    }
+  }
+
   return out;
 }
 

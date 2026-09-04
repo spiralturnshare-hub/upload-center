@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, Loader2, Lock, Upload, CheckCircle2 } from 'lucide-react';
 import {
   fetchUploadByOrderId,
+  fetchUploadById,
   canCustomerEditUpload,
   fetchCurrentUploadFiles,
   updateUploadAsCustomer,
@@ -40,7 +41,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export default function EditUploadPage() {
-  const { setCurrentPage, orderId, orderName, userId } = useUpload();
+  const { setCurrentPage, orderId, orderName, userId, editUploadId } = useUpload();
 
   const [loading, setLoading] = useState(true);
   const [upload, setUpload] = useState<UploadFullRecord | null>(null);
@@ -59,14 +60,18 @@ export default function EditUploadPage() {
   const [takoNote, setTakoNote] = useState('');
 
   useEffect(() => {
-    if (!orderId) {
+    if (!orderId && !editUploadId) {
       setLoading(false);
       return;
     }
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const rec = await fetchUploadByOrderId(orderId);
+      // editUploadId が指定されていれば upload ID で直接(注文なしのゲストアップロード等)、
+      // なければ従来どおり注文IDから引く。
+      const rec = editUploadId
+        ? await fetchUploadById(editUploadId)
+        : await fetchUploadByOrderId(orderId);
       if (!rec) {
         if (!cancelled) { setUpload(null); setLoading(false); }
         return;
@@ -87,7 +92,7 @@ export default function EditUploadPage() {
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [orderId]);
+  }, [orderId, editUploadId]);
 
   function ci(key: string): string {
     const v = customerInfo[key];
@@ -185,7 +190,11 @@ export default function EditUploadPage() {
       </div>
 
       <div className="flex-1 p-4 overflow-y-auto space-y-4">
-        <p className="text-xs text-gray-400">注文ID: {orderName || upload.order_name}</p>
+        <p className="text-xs text-gray-400">
+          {orderName || upload.order_name
+            ? `注文番号: ${orderName || upload.order_name}`
+            : upload.guest_tf ? 'ゲストアップロード' : '注文番号なし'}
+        </p>
 
         {!editable && (
           <div className="flex items-start gap-2 text-sm bg-orange-50 text-orange-700 rounded-xl p-4">
