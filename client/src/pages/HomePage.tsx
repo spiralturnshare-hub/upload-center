@@ -19,7 +19,9 @@ import { fetchOrderDashboard, supabase } from '@/lib/supabase';
 //   ・アカウントはヘッダーに移動(本文の大きなバナーは廃止)。
 // ============================================================
 
-const LOGO_URL = '/oios-logo.svg'; // 正式な OIOS 画像を client/public/oios-logo.(svg|png) に差し替え可
+// ヘッダーはロゴ画像を出さない。このアップロードアプリは自社(スパイラルターン)だけでなく
+// OEM 各社も同じものを使うため、特定ロゴを出すと発行元が分からなくなる。
+// 代わりに「オーダーメイドインソール / アップロードセンター」の2段テキスト(同じフォント・同じサイズ)。
 
 const PINK = '#D62598';
 const PINK_DARK = '#a81b77';
@@ -105,13 +107,16 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col max-w-lg mx-auto">
-      {/* ── ヘッダー: ロゴ(中央) / タイトル(中央) / アカウント・サインアウト ── */}
+      {/* ── ヘッダー: 2段タイトル(中央) / アカウント・サインアウト ── */}
       <header className="bg-white shadow-sm sticky top-0 z-20">
         <div className="flex flex-col items-center gap-1.5 px-4 pt-3 pb-2.5">
-          <img src={LOGO_URL} alt="OIOS" className="h-7 object-contain" />
-          <span className="text-base font-bold text-gray-800 tracking-wide">アップロードセンター</span>
+          {/* ロゴ画像は出さない(OEM 各社共用のため)。2段テキストは同フォント・同サイズ */}
+          <div className="flex flex-col items-center leading-tight">
+            <span className="text-base font-bold text-gray-800 tracking-wide">オーダーメイドインソール</span>
+            <span className="text-base font-bold text-gray-800 tracking-wide">アップロードセンター</span>
+          </div>
 
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="flex items-center gap-2 mt-1">
             {isLoggedIn ? (
               <>
                 <button
