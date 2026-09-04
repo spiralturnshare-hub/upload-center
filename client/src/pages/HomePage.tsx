@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Shield, LogOut, User, UserRound, ChevronRight } from 'lucide-react';
+import { Upload, Shield, LogOut, User, UserRound, ChevronRight, HelpCircle, X } from 'lucide-react';
 import { useUpload } from '@/contexts/UploadContext';
 import type { OrderListMode } from '@/contexts/UploadContext';
 import { fetchOrderDashboard, supabase } from '@/lib/supabase';
@@ -30,8 +30,26 @@ const PINK_BG = '#FCE4F4';
 const BEIGE_BG = '#FAF6EE';
 const BEIGE_BORDER = '#ECE3D3';
 
+const HELP_TEXT: Record<'id' | 'guest', { title: string; body: string }> = {
+  id: {
+    title: '決済完了IDとは',
+    body:
+      'ご注文の決済が完了すると、登録メールアドレスに「決済完了ID(注文番号)」が届きます。' +
+      'サインインせずにアップロードしたいとき、または注文が一覧に出てこないときに、' +
+      'このIDを入力してアップロードを開始できます。',
+  },
+  guest: {
+    title: 'ゲストアップロードとは',
+    body:
+      '決済がまだ完了していない、決済完了IDが見当たらない、どの入口を使えばよいか分からない — ' +
+      'そんなときの入口です。決済記録と紐付けずに、インソールの種類をご自身で選んでアップロードできます' +
+      '(サインインは必要です)。',
+  },
+};
+
 export default function HomePage() {
   const { isLoggedIn, setIsLoggedIn, setCurrentPage, isProfileRegistered, setOrderListMode } = useUpload();
+  const [help, setHelp] = useState<'id' | 'guest' | null>(null);
 
   // 注文一覧の件数(決済済み注文 × アップロード状態の突合)
   const [counts, setCounts] = useState<{ needing: number; inProgress: number; completed: number } | null>(null);
@@ -159,7 +177,7 @@ export default function HomePage() {
                 className="w-full flex items-center gap-4 p-4 hover:bg-black/[0.03] active:scale-[0.98] transition-all duration-150 text-left"
               >
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#EFEAE0' }}>
-                  <Shield className="w-5 h-5 text-gray-400" />
+                  <span className="text-lg font-bold text-gray-400 leading-none">完</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-800">アップロードが完了した注文</p>
@@ -196,28 +214,55 @@ export default function HomePage() {
             その他のアップロード
           </h3>
           <div className="grid grid-cols-2 gap-3 items-start">
-            <button
+            {/* 決済完了IDでアップロード */}
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => setCurrentPage('payment-id-upload')}
-              className="flex flex-col bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md active:scale-[0.98] transition-all duration-150 text-left"
+              onKeyDown={(e) => { if (e.key === 'Enter') setCurrentPage('payment-id-upload'); }}
+              className="flex flex-col bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md active:scale-[0.98] transition-all duration-150 text-left cursor-pointer"
             >
-              {/* 決済完了ID = ピンク枠の中に「ID」の文字 */}
-              <div className="w-10 h-10 rounded-xl border-2 flex items-center justify-center mb-3 flex-shrink-0" style={{ borderColor: PINK }}>
-                <span className="text-xs font-extrabold tracking-wide" style={{ color: PINK }}>ID</span>
+              <div className="flex items-center gap-1.5 mb-3">
+                <div className="w-10 h-10 rounded-xl border-2 flex items-center justify-center flex-shrink-0" style={{ borderColor: PINK }}>
+                  <span className="text-xs font-extrabold tracking-wide" style={{ color: PINK }}>ID</span>
+                </div>
+                <button
+                  type="button"
+                  aria-label="決済完了IDとは"
+                  onClick={(e) => { e.stopPropagation(); setHelp('id'); }}
+                  className="text-gray-300 hover:text-gray-500 transition-colors"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                </button>
               </div>
               <p className="text-sm font-semibold text-gray-800">決済完了IDで<br />アップロード</p>
-              <p className="text-xs text-gray-400 mt-1">決済後にEmailで送られてくるIDが必要です。</p>
-            </button>
-            <button
+              <p className="text-xs text-gray-400 mt-1">アップロードのお手伝い時に便利。</p>
+            </div>
+
+            {/* ゲストアップロード */}
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => setCurrentPage('guest-upload')}
-              className="flex flex-col bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md active:scale-[0.98] transition-all duration-150 text-left"
+              onKeyDown={(e) => { if (e.key === 'Enter') setCurrentPage('guest-upload'); }}
+              className="flex flex-col bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md active:scale-[0.98] transition-all duration-150 text-left cursor-pointer"
             >
-              {/* ゲスト = 人物アイコン */}
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 flex-shrink-0" style={{ backgroundColor: PINK_BG }}>
-                <UserRound className="w-5 h-5" style={{ color: PINK }} />
+              <div className="flex items-center gap-1.5 mb-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: PINK_BG }}>
+                  <UserRound className="w-5 h-5" style={{ color: PINK }} />
+                </div>
+                <button
+                  type="button"
+                  aria-label="ゲストアップロードとは"
+                  onClick={(e) => { e.stopPropagation(); setHelp('guest'); }}
+                  className="text-gray-300 hover:text-gray-500 transition-colors"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                </button>
               </div>
               <p className="text-sm font-semibold text-gray-800">ゲスト<br />アップロード</p>
-              <p className="text-xs text-gray-400 mt-1">決済IDが無い場合はこちら。</p>
-            </button>
+              <p className="text-xs text-gray-400 mt-1">アップロード手段に悩んだらこれ。</p>
+            </div>
           </div>
         </div>
 
@@ -229,6 +274,34 @@ export default function HomePage() {
           ※ 決済が完了している場合、「決済完了IDでアップロード」からデータのアップロードを行ってください。
         </div>
       </main>
+
+      {/* ヘルプのポップアップ */}
+      {help && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-5"
+          onClick={() => setHelp(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <h4 className="text-sm font-bold text-gray-800">{HELP_TEXT[help].title}</h4>
+              <button onClick={() => setHelp(null)} className="text-gray-400 hover:text-gray-600 -mt-0.5" aria-label="閉じる">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="mt-2 text-xs leading-relaxed text-gray-600">{HELP_TEXT[help].body}</p>
+            <button
+              onClick={() => setHelp(null)}
+              className="mt-4 w-full rounded-xl py-2.5 text-sm font-semibold text-white"
+              style={{ backgroundColor: PINK }}
+            >
+              閉じる
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
