@@ -344,3 +344,9 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
   対象外だった)→ 顧客は自分の改訂履歴を1行も読めない状態。031 で is-own 判定を uploads 経由の
   `public.users.auth_user_id = auth.uid()` に是正。適用するまで完了カードの修正ログは常に空(害はない)。
 - ビルド OK(`npx vite build` はリポジトリ直下から実行。`client/` 直下には vite.config が無く別ディレクトリにある点に注意)。
+
+## 2026-09-05: EditUploadPage の靴情報見出しを日本語化 + 決済完了ページ新設
+
+- **バグ修正**: `EditUploadPage` の「靴情報(walk)」のような見出しが `insoleKind` の内部コードのまま表示されていた。`OrderListPage` は `INSOLE_DISPLAY_NAMES` で日本語化済みだったのに `EditUploadPage` だけ翻訳漏れ。`lib/insoleConfig.ts` の `INSOLE_DISPLAY_NAMES` を import して修正。
+- **`PaymentCompletePage.tsx` 新設**: dealer-insole-order の対面決済(QR決済)完了後、Stripe が upload-center へリダイレクトする先(`docs/34` §4Y)。`UploadContext.tsx` の `currentPage` 初期化で起動時に1回だけ `?payment=success`/`?payment=canceled` を読み、該当ページへ(ログイン状態と無関係に効く)。注文詳細は表示せず「ありがとうございました」+「アップロードセンターへ」ボタンのみ(決済完了メールが詳細を送る仕様のため・冨永社長 2026-09-05)。`App.tsx` に `payment-complete`/`payment-canceled` ケースを追加。
+- ビルド・tsc(`Home.tsx` streamdown 以外)OK。DB変更なし。

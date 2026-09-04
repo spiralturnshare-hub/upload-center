@@ -224,7 +224,16 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   const [uploadData, setUploadData] = useState<UploadData>(defaultUploadData);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
-  const [currentPage, setCurrentPage] = useState('home');
+  // 対面決済(dealer-insole-order の QR決済)の Stripe success_url/cancel_url が
+  // upload-center を指す(`?payment=success` / `?payment=canceled`)。起動時に1回だけ読み取り、
+  // 該当すれば決済結果画面から始める(ログイン状態や他の遷移とは無関係に効く)。
+  // 参照: spiralturn-green-integration/docs/34 §4 green_checkout_session_generator。
+  const [currentPage, setCurrentPage] = useState(() => {
+    const payment = new URLSearchParams(window.location.search).get('payment');
+    if (payment === 'success') return 'payment-complete';
+    if (payment === 'canceled') return 'payment-canceled';
+    return 'home';
+  });
   const [returnToPage, setReturnToPage] = useState('home');
   const [isGuestUpload, setIsGuestUpload] = useState(false);
   const [orderId, setOrderId] = useState('');

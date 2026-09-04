@@ -23,6 +23,7 @@ import PaymentIdUploadPage from "./pages/PaymentIdUploadPage";
 import GuestUploadPage from "./pages/GuestUploadPage";
 import EditUploadPage from "./pages/EditUploadPage";
 import OrderListPage from "./pages/OrderListPage";
+import PaymentCompletePage from "./pages/PaymentCompletePage";
 
 // ============================================================
 // Design: ビビッド・フォーム
@@ -80,6 +81,10 @@ function AppRouter() {
       return <EditUploadPage />;
     case 'order-list':
       return <OrderListPage />;
+    case 'payment-complete':
+      return <PaymentCompletePage status="success" />;
+    case 'payment-canceled':
+      return <PaymentCompletePage status="canceled" />;
     default:
       return <HomePage />;
   }

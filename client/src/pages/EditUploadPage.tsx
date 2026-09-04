@@ -29,6 +29,8 @@ import {
   type UploadFullRecord,
 } from '@/lib/supabase';
 import { kindLabel } from '@/lib/kindLabels';
+import { INSOLE_DISPLAY_NAMES } from '@/lib/insoleConfig';
+import type { InsoleKind } from '@/lib/insoleConfig';
 
 const PINK = '#2563EB';
 const inputClass = 'w-full h-11 px-3 rounded-xl border-2 border-gray-200 text-sm focus:outline-none transition-colors';
@@ -289,7 +291,9 @@ export default function EditUploadPage() {
         {/* 靴情報(選択中のインソール種別ごと) */}
         {(upload.selected_insoles ?? []).map((insoleKind) => (
           <div key={insoleKind} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-            <h3 className="text-sm font-bold text-gray-800 mb-3">靴情報({insoleKind})</h3>
+            <h3 className="text-sm font-bold text-gray-800 mb-3">
+              靴情報({INSOLE_DISPLAY_NAMES[insoleKind as InsoleKind] ?? insoleKind})
+            </h3>
             <Field label="ブランド">
               <input
                 className={inputClass}
