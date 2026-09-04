@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, PauseCircle, Shield, LogOut, User, ChevronRight, QrCode } from 'lucide-react';
+import { Upload, Shield, LogOut, User, UserRound, ChevronRight } from 'lucide-react';
 import { useUpload } from '@/contexts/UploadContext';
 import type { OrderListMode } from '@/contexts/UploadContext';
 import { fetchOrderDashboard, supabase } from '@/lib/supabase';
@@ -29,50 +29,6 @@ const PINK_BG = '#FCE4F4';
 // 中間トーン: 中断 / 完了 / 保証 の背景。白カード(その他のアップロード)との差をつける
 const BEIGE_BG = '#FAF6EE';
 const BEIGE_BORDER = '#ECE3D3';
-
-// 中間トーンのカード(背景ベージュ)。count=有 → ピンクの丸+数字 / muted → 灰色の数字のみ
-function OrderCard({
-  icon, title, subtitle, count, muted = false, onClick,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-  count?: number;
-  muted?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center gap-4 rounded-2xl p-4 shadow-sm border text-left transition-all duration-150 hover:shadow-md active:scale-[0.98]"
-      style={{ backgroundColor: BEIGE_BG, borderColor: BEIGE_BORDER }}
-    >
-      <div
-        className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ backgroundColor: muted ? '#EFEAE0' : PINK_BG }}
-      >
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-gray-800">{title}</p>
-        <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
-      </div>
-      {count !== undefined && count > 0 && (
-        muted ? (
-          <span className="text-sm font-bold text-gray-400 flex-shrink-0 tabular-nums">{count}</span>
-        ) : (
-          <span
-            className="w-6 h-6 text-xs font-bold text-white rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: PINK }}
-          >
-            {count}
-          </span>
-        )
-      )}
-      <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
-    </button>
-  );
-}
 
 export default function HomePage() {
   const { isLoggedIn, setIsLoggedIn, setCurrentPage, isProfileRegistered, setOrderListMode } = useUpload();
@@ -161,44 +117,40 @@ export default function HomePage() {
               注文一覧
             </h3>
 
-            {/* 最上部・最も目立たせる: アップロードが必要な注文(ビビットピンクのグラデ + 柄) */}
-            <button
-              onClick={() => openOrderList('needing')}
-              className="relative w-full overflow-hidden rounded-2xl p-5 text-left shadow-sm border-2 transition-all duration-150 hover:shadow-md active:scale-[0.98]"
-              style={{ background: `linear-gradient(135deg, ${PINK} 0%, ${PINK_DARK} 100%)`, borderColor: '#F062B8' }}
-            >
-              {/* 装飾の柄(半透明の円) */}
-              <div className="pointer-events-none absolute -right-8 -top-10 w-32 h-32 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
-              <div className="pointer-events-none absolute -right-2 -bottom-14 w-40 h-40 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }} />
-              <div className="pointer-events-none absolute left-16 -bottom-16 w-28 h-28 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }} />
+            {/* 最上部・最も目立たせる: アップロードが必要な注文(新規+中断を包含。ビビットピンクのグラデ + 柄) */}
+            {(() => {
+              const needTotal = counts ? counts.needing + counts.inProgress : null;
+              return (
+                <button
+                  onClick={() => openOrderList('needing')}
+                  className="relative w-full overflow-hidden rounded-2xl p-5 text-left shadow-sm border-2 transition-all duration-150 hover:shadow-md active:scale-[0.98]"
+                  style={{ background: `linear-gradient(135deg, ${PINK} 0%, ${PINK_DARK} 100%)`, borderColor: '#F062B8' }}
+                >
+                  {/* 装飾の柄(半透明の円) */}
+                  <div className="pointer-events-none absolute -right-8 -top-10 w-32 h-32 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />
+                  <div className="pointer-events-none absolute -right-2 -bottom-14 w-40 h-40 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.10)' }} />
+                  <div className="pointer-events-none absolute left-16 -bottom-16 w-28 h-28 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.07)' }} />
 
-              <div className="relative z-10 flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}>
-                  <Upload className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-base font-bold text-white">アップロードが必要な注文</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.85)' }}>
-                    {counts ? `決済済みで未アップロードの注文 ${counts.needing} 件` : '読み込み中…'}
-                  </p>
-                </div>
-                {counts !== null && counts.needing > 0 && (
-                  <span className="w-7 h-7 text-sm font-bold rounded-full flex items-center justify-center flex-shrink-0 bg-white" style={{ color: PINK }}>
-                    {counts.needing}
-                  </span>
-                )}
-                <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.7)' }} />
-              </div>
-            </button>
-
-            {/* 中間トーン(背景ベージュ): 中断した注文 = ピンクの丸で促す */}
-            <OrderCard
-              icon={<PauseCircle className="w-5 h-5" style={{ color: PINK }} />}
-              title="アップロードを中断した注文"
-              subtitle={counts ? `途中で保存された注文 ${counts.inProgress} 件` : '読み込み中…'}
-              count={counts?.inProgress}
-              onClick={() => openOrderList('in-progress')}
-            />
+                  <div className="relative z-10 flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}>
+                      <Upload className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base font-bold text-white">アップロードが必要な注文</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.85)' }}>
+                        {needTotal !== null ? `新規・中断あわせて ${needTotal} 件` : '読み込み中…'}
+                      </p>
+                    </div>
+                    {needTotal !== null && needTotal > 0 && (
+                      <span className="w-7 h-7 text-sm font-bold rounded-full flex items-center justify-center flex-shrink-0 bg-white" style={{ color: PINK }}>
+                        {needTotal}
+                      </span>
+                    )}
+                    <ChevronRight className="w-4 h-4 flex-shrink-0" style={{ color: 'rgba(255,255,255,0.7)' }} />
+                  </div>
+                </button>
+              );
+            })()}
 
             {/* 中間トーン(背景ベージュ): 完了した注文(灰色の数字のみ)+ 保証・サービス */}
             <div className="rounded-2xl border shadow-sm overflow-hidden" style={{ backgroundColor: BEIGE_BG, borderColor: BEIGE_BORDER }}>
@@ -243,23 +195,25 @@ export default function HomePage() {
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1">
             その他のアップロード
           </h3>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 items-start">
             <button
               onClick={() => setCurrentPage('payment-id-upload')}
-              className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md active:scale-[0.98] transition-all duration-150 text-left"
+              className="flex flex-col bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md active:scale-[0.98] transition-all duration-150 text-left"
             >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: PINK_BG }}>
-                <Upload className="w-5 h-5" style={{ color: PINK }} />
+              {/* 決済完了ID = ピンク枠の中に「ID」の文字 */}
+              <div className="w-10 h-10 rounded-xl border-2 flex items-center justify-center mb-3 flex-shrink-0" style={{ borderColor: PINK }}>
+                <span className="text-xs font-extrabold tracking-wide" style={{ color: PINK }}>ID</span>
               </div>
               <p className="text-sm font-semibold text-gray-800">決済完了IDで<br />アップロード</p>
               <p className="text-xs text-gray-400 mt-1">決済後にEmailで送られてくるIDが必要です。</p>
             </button>
             <button
               onClick={() => setCurrentPage('guest-upload')}
-              className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md active:scale-[0.98] transition-all duration-150 text-left"
+              className="flex flex-col bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md active:scale-[0.98] transition-all duration-150 text-left"
             >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: PINK_BG }}>
-                <QrCode className="w-5 h-5" style={{ color: PINK }} />
+              {/* ゲスト = 人物アイコン */}
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 flex-shrink-0" style={{ backgroundColor: PINK_BG }}>
+                <UserRound className="w-5 h-5" style={{ color: PINK }} />
               </div>
               <p className="text-sm font-semibold text-gray-800">ゲスト<br />アップロード</p>
               <p className="text-xs text-gray-400 mt-1">決済IDが無い場合はこちら。</p>

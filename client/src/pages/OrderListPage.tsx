@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ArrowLeft, Loader2, Upload, PlayCircle, CheckCircle2, PackageOpen } from 'lucide-react';
 import { useUpload } from '@/contexts/UploadContext';
 import PinkButton from '@/components/PinkButton';
@@ -24,6 +24,8 @@ const PINK = '#D62598';
 // 「歩き用・ルーム用のアップロードが必要です」のように表示する。
 // ============================================================
 
+// 'needing' は「新規 + 中断」の2セクションを内包する(冨永社長 2026-09-04)。
+// トップ画面のピンクカードから来る。ここで新規/中断を選ぶ。
 const MODE_META = {
   needing: {
     title: 'アップロードが必要な注文',
@@ -77,10 +79,16 @@ export default function OrderListPage() {
   }, []);
 
   const meta = MODE_META[orderListMode];
-  const rows: (DashboardOrder | DashboardInProgress | DashboardCompleted)[] =
-    orderListMode === 'needing' ? data.needing
-      : orderListMode === 'in-progress' ? data.inProgress
-        : data.completed;
+
+  // 'needing' = 新規(data.needing) + 中断(data.inProgress)を両方表示。
+  // 'in-progress' = 中断のみ。'completed' = 完了のみ。
+  const showNew = orderListMode === 'needing';
+  const showResume = orderListMode === 'needing' || orderListMode === 'in-progress';
+  const showCompleted = orderListMode === 'completed';
+  const newRows = showNew ? data.needing : [];
+  const resumeRows = showResume ? data.inProgress : [];
+  const completedRows = showCompleted ? data.completed : [];
+  const totalRows = newRows.length + resumeRows.length + completedRows.length;
 
   // --- 各モードのアクション ---
   const startNew = async (o: DashboardOrder) => {
@@ -116,6 +124,20 @@ export default function OrderListPage() {
     setCurrentPage('edit-upload');
   };
 
+  // 1注文カードの共通枠
+  const OrderRow = ({ o, children }: { o: DashboardOrder; children: ReactNode }) => (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
+      <div>
+        <p className="text-sm font-bold text-gray-800">
+          {insoleLabel(o.insoleKinds)}
+          {o.roomShoes ? '（＋ルームシューズ）' : ''}
+        </p>
+        <p className="text-xs text-gray-400 mt-0.5">注文番号: {o.orderName ?? '—'}</p>
+      </div>
+      {children}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col max-w-lg mx-auto">
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
@@ -143,7 +165,7 @@ export default function OrderListPage() {
           </div>
         )}
 
-        {!loading && !error && rows.length === 0 && (
+        {!loading && !error && totalRows === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
             <PackageOpen className="w-10 h-10 text-gray-300" />
             <p className="text-sm text-gray-500">{meta.empty}</p>
@@ -151,50 +173,66 @@ export default function OrderListPage() {
           </div>
         )}
 
-        {!loading && !error && rows.map((o) => (
-          <div key={o.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
-            <div>
-              <p className="text-sm font-bold text-gray-800">
-                {insoleLabel(o.insoleKinds)}
-                {o.roomShoes ? '（＋ルームシューズ）' : ''}
-              </p>
-              <p className="text-xs text-gray-400 mt-0.5">注文番号: {o.orderName ?? '—'}</p>
-            </div>
+        {!loading && !error && (
+          <>
+            {/* 新規でアップロードが必要な注文 */}
+            {showNew && newRows.length > 0 && (
+              <div className="space-y-3">
+                {(showResume) && (
+                  <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1 pt-1 flex items-center gap-1.5">
+                    <Upload className="w-3.5 h-3.5" style={{ color: PINK }} />
+                    新規でアップロードが必要な注文（{newRows.length}）
+                  </h2>
+                )}
+                {newRows.map((o) => (
+                  <OrderRow key={o.id} o={o}>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-semibold" style={{ color: PINK }}>{insoleLabel(o.insoleKinds)}</span>
+                      {' '}のアップロードが必要です。
+                    </p>
+                    <PinkButton size="md" className="w-full" disabled={busyId === o.id} onClick={() => startNew(o)}>
+                      {busyId === o.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      この注文のアップロードを開始
+                    </PinkButton>
+                  </OrderRow>
+                ))}
+              </div>
+            )}
 
-            {orderListMode === 'needing' && (
-              <>
-                <p className="text-sm text-gray-700">
-                  <span className="font-semibold" style={{ color: PINK }}>{insoleLabel(o.insoleKinds)}</span>
-                  {' '}のアップロードが必要です。
-                </p>
-                <PinkButton size="md" className="w-full" disabled={busyId === o.id} onClick={() => startNew(o)}>
-                  {busyId === o.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                  この注文のアップロードを開始
+            {/* アップロードを中断した注文 */}
+            {showResume && resumeRows.length > 0 && (
+              <div className="space-y-3 pt-1">
+                {(showNew) && (
+                  <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1 pt-2 flex items-center gap-1.5">
+                    <PlayCircle className="w-3.5 h-3.5" style={{ color: PINK }} />
+                    アップロードを中断した注文（{resumeRows.length}）
+                  </h2>
+                )}
+                {resumeRows.map((o) => (
+                  <OrderRow key={o.id} o={o}>
+                    <p className="text-sm text-gray-700">
+                      アップロード途中です（{o.uploadedKinds.length} 件のデータを保存済み）。続きから再開できます。
+                    </p>
+                    <PinkButton size="md" className="w-full" disabled={busyId === o.id} onClick={() => resume(o)}>
+                      {busyId === o.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlayCircle className="w-4 h-4" />}
+                      続きから再開する
+                    </PinkButton>
+                  </OrderRow>
+                ))}
+              </div>
+            )}
+
+            {/* 完了した注文 */}
+            {showCompleted && completedRows.map((o) => (
+              <OrderRow key={o.id} o={o}>
+                <PinkButton size="md" variant="outline" className="w-full" onClick={() => openEdit(o)}>
+                  <CheckCircle2 className="w-4 h-4" />
+                  アップロード内容の確認・修正
                 </PinkButton>
-              </>
-            )}
-
-            {orderListMode === 'in-progress' && 'uploadedKinds' in o && (
-              <>
-                <p className="text-sm text-gray-700">
-                  アップロード途中です（{(o as DashboardInProgress).uploadedKinds.length} 件のデータを保存済み）。
-                  続きから再開できます。
-                </p>
-                <PinkButton size="md" className="w-full" disabled={busyId === o.id} onClick={() => resume(o as DashboardInProgress)}>
-                  {busyId === o.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlayCircle className="w-4 h-4" />}
-                  続きから再開する
-                </PinkButton>
-              </>
-            )}
-
-            {orderListMode === 'completed' && (
-              <PinkButton size="md" variant="outline" className="w-full" onClick={() => openEdit(o as DashboardCompleted)}>
-                <CheckCircle2 className="w-4 h-4" />
-                アップロード内容の確認・修正
-              </PinkButton>
-            )}
-          </div>
-        ))}
+              </OrderRow>
+            ))}
+          </>
+        )}
       </div>
     </div>
   );
