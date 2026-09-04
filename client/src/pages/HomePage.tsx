@@ -210,8 +210,8 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ── その他のアップロード ── */}
-        <div className="space-y-2">
+        {/* ── その他のアップロード ── (通常アップロード/保証・サービスとの間隔を2倍に) */}
+        <div className="space-y-2 pt-5">
           <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1">
             その他のアップロード
           </h3>
