@@ -667,6 +667,16 @@ export async function fetchOrderDashboard(): Promise<OrderDashboard> {
     }
   }
 
+  // 3バケットとも「新しいもの順」に並べる(セクションA=注文, B=注文なし を合わせて日時でソート)
+  const ts = (s: string | null | undefined) => (s ? new Date(s).getTime() : 0);
+  out.needing.sort((a, b) => ts(b.createdAt) - ts(a.createdAt));
+  out.inProgress.sort(
+    (a, b) => ts(b.interruptedAt ?? b.uploadStartedAt ?? b.createdAt) - ts(a.interruptedAt ?? a.uploadStartedAt ?? a.createdAt),
+  );
+  out.completed.sort(
+    (a, b) => ts(b.completedAt ?? b.uploadStartedAt ?? b.createdAt) - ts(a.completedAt ?? a.uploadStartedAt ?? a.createdAt),
+  );
+
   return out;
 }
 
