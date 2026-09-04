@@ -83,48 +83,48 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col max-w-lg mx-auto">
-      {/* ── ヘッダー: 2段タイトル(中央) / アカウント・サインアウト ── */}
-      <header className="bg-white shadow-sm sticky top-0 z-20">
-        <div className="flex flex-col items-center gap-1.5 px-4 pt-3 pb-2.5">
+      {/* ── ヘッダー: 2段タイトル(中央・ゆったり) / サインアウトは右上 / アカウント情報は中央 ── */}
+      <header className="relative bg-white shadow-sm sticky top-0 z-20">
+        {/* サインアウトは右上に固定(ログイン時のみ) */}
+        {isLoggedIn && (
+          <button
+            onClick={handleSignOut}
+            className="absolute top-2.5 right-3 flex items-center gap-1 rounded-full px-2 py-1 text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>サインアウト</span>
+          </button>
+        )}
+
+        <div className="flex flex-col items-center gap-2.5 px-4 pt-6 pb-4">
           {/* ロゴ画像は出さない(OEM 各社共用のため)。2段テキストは同フォント・同サイズ */}
-          <div className="flex flex-col items-center leading-tight">
+          <div className="flex flex-col items-center leading-snug">
             <span className="text-base font-bold text-gray-800 tracking-wide">オーダーメイドインソール</span>
             <span className="text-base font-bold text-gray-800 tracking-wide">アップロードセンター</span>
           </div>
 
-          <div className="flex items-center gap-2 mt-1">
-            {isLoggedIn ? (
-              <>
-                <button
-                  onClick={() => setCurrentPage('account-profile')}
-                  className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-pink-50"
-                  style={{ borderColor: PINK, color: PINK }}
-                >
-                  <User className="w-3.5 h-3.5" />
-                  <span>アカウント情報</span>
-                  {!isProfileRegistered && (
-                    <span className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: PINK }} />
-                  )}
-                </button>
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>サインアウト</span>
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={handleSignIn}
-                className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
-                style={{ borderColor: PINK, color: PINK }}
-              >
-                <User className="w-3.5 h-3.5" />
-                <span>サインイン / 新規登録</span>
-              </button>
-            )}
-          </div>
+          {isLoggedIn ? (
+            <button
+              onClick={() => setCurrentPage('account-profile')}
+              className="flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-semibold transition-colors hover:bg-pink-50"
+              style={{ borderColor: PINK, color: PINK }}
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>アカウント情報</span>
+              {!isProfileRegistered && (
+                <span className="ml-0.5 inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: PINK }} />
+              )}
+            </button>
+          ) : (
+            <button
+              onClick={handleSignIn}
+              className="flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-semibold transition-opacity hover:opacity-80"
+              style={{ borderColor: PINK, color: PINK }}
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>サインイン / 新規登録</span>
+            </button>
+          )}
         </div>
       </header>
 
