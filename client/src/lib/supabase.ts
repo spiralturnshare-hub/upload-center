@@ -390,7 +390,15 @@ export async function replaceUploadFileAsCustomer(params: {
     p_changed_by_type: 'customer',
     p_changed_by_id: params.userId,
   });
-  if (error) throw error;
+  // PostgrestError は素のオブジェクトで instanceof Error が false。
+  // そのまま throw すると呼び出し側の汎用メッセージに潰れて原因が分からなくなる。
+  if (error) {
+    throw new Error(
+      `replace_upload_file 失敗 [${error.code ?? '?'}] ${error.message}` +
+      `${error.details ? ` / ${error.details}` : ''}` +
+      `${error.hint ? ` / hint: ${error.hint}` : ''}`,
+    );
+  }
 }
 
 // ============================================================

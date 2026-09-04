@@ -162,14 +162,16 @@ export default function EditUploadPage() {
     setReplacingKind(kind);
     try {
       const fileId = crypto.randomUUID();
-      const { url } = await uploadFileToStorage(newFile, upload.id, kind, fileId, userId);
+      // 1) 新ファイルを Storage(upsys)へ
+      const { path } = await uploadFileToStorage(newFile, upload.id, kind, fileId, userId);
+      // 2) RPC で差し替え(旧行は is_current=false で保持・履歴に残る)
       await replaceUploadFileAsCustomer({
         uploadId: upload.id,
         orderId: upload.order_id,
         userId,
         kind,
         fileType,
-        url,
+        url: path,
       });
       const fileList = await fetchCurrentUploadFiles(upload.id);
       setFiles(fileList);
@@ -177,7 +179,9 @@ export default function EditUploadPage() {
       setFileUrls(Object.fromEntries(pairs));
       toast.success('ファイルを差し替えました');
     } catch (e) {
-      toast.error('ファイルの差し替えに失敗しました');
+      // 実エラーをそのまま出す(原因の可視化)
+      toast.error(e instanceof Error ? `差し替えに失敗: ${e.message}` : 'ファイルの差し替えに失敗しました');
+      console.error('replace file error:', e);
     } finally {
       setReplacingKind(null);
     }
