@@ -60,7 +60,7 @@ function ShoesComponent({ insoleKind, info, onChange, errors }: {
         {/* ブランド */}
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-2">
-            靴のブランド <span className="text-xs font-medium px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: '#D62598' }}>必須</span>
+            靴のブランド <span className="text-xs font-medium px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: '#2563EB' }}>必須</span>
           </label>
           <div
             className="grid grid-cols-3 gap-2 rounded-xl p-2 transition-all"
@@ -72,9 +72,9 @@ function ShoesComponent({ insoleKind, info, onChange, errors }: {
                 onClick={() => update({ brand, otherBrand: '' })}
                 className="h-10 rounded-xl text-xs font-medium border-2 transition-all duration-150 active:scale-[0.97]"
                 style={{
-                  borderColor: info.brand === brand ? '#D62598' : '#E5E7EB',
-                  backgroundColor: info.brand === brand ? '#FCE4F4' : 'white',
-                  color: info.brand === brand ? '#D62598' : '#374151',
+                  borderColor: info.brand === brand ? '#2563EB' : '#E5E7EB',
+                  backgroundColor: info.brand === brand ? '#DBEAFE' : 'white',
+                  color: info.brand === brand ? '#2563EB' : '#374151',
                 }}
               >
                 {brand}
@@ -91,7 +91,7 @@ function ShoesComponent({ insoleKind, info, onChange, errors }: {
               onChange={e => update({ otherBrand: e.target.value })}
               placeholder="その他のブランド名を入力"
               className="mt-2 w-full h-11 px-4 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none transition-all"
-              onFocus={e => (e.target.style.borderColor = '#D62598')}
+              onFocus={e => (e.target.style.borderColor = '#2563EB')}
               onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
             />
           )}
@@ -100,7 +100,7 @@ function ShoesComponent({ insoleKind, info, onChange, errors }: {
         {/* 靴のサイズ */}
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1.5">
-            靴の表記サイズ <span className="text-xs font-medium px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: '#D62598' }}>必須</span>
+            靴の表記サイズ <span className="text-xs font-medium px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: '#2563EB' }}>必須</span>
           </label>
           <input
             type="text"
@@ -112,7 +112,7 @@ function ShoesComponent({ insoleKind, info, onChange, errors }: {
               borderColor: errors.size ? ERROR_BORDER : '#E5E7EB',
               backgroundColor: errors.size ? ERROR_BG : 'white',
             }}
-            onFocus={e => (e.target.style.borderColor = errors.size ? ERROR_BORDER : '#D62598')}
+            onFocus={e => (e.target.style.borderColor = errors.size ? ERROR_BORDER : '#2563EB')}
             onBlur={e => (e.target.style.borderColor = errors.size ? ERROR_BORDER : '#E5E7EB')}
           />
           {errors.size && (
@@ -129,7 +129,7 @@ function ShoesComponent({ insoleKind, info, onChange, errors }: {
             onChange={e => update({ insoleSize: e.target.value })}
             placeholder="例）245"
             className="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none transition-all"
-            onFocus={e => (e.target.style.borderColor = '#D62598')}
+            onFocus={e => (e.target.style.borderColor = '#2563EB')}
             onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
           />
           <p className="text-xs text-gray-400 mt-1">※ なるべくmmでご記入ください</p>
@@ -138,7 +138,7 @@ function ShoesComponent({ insoleKind, info, onChange, errors }: {
         {/* フィット感 */}
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-2">
-            靴のフィット感（主観） <span className="text-xs font-medium px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: '#D62598' }}>必須</span>
+            靴のフィット感（主観） <span className="text-xs font-medium px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: '#2563EB' }}>必須</span>
           </label>
           <div
             className="grid grid-cols-3 gap-2 rounded-xl p-1 transition-all"
@@ -150,9 +150,9 @@ function ShoesComponent({ insoleKind, info, onChange, errors }: {
                 onClick={() => update({ fit: opt.value as 'tight' | 'just' | 'loose' })}
                 className="h-11 rounded-xl text-sm font-medium border-2 transition-all duration-150 active:scale-[0.97]"
                 style={{
-                  borderColor: info.fit === opt.value ? '#D62598' : errors.fit ? ERROR_BORDER : '#E5E7EB',
-                  backgroundColor: info.fit === opt.value ? '#FCE4F4' : 'white',
-                  color: info.fit === opt.value ? '#D62598' : '#374151',
+                  borderColor: info.fit === opt.value ? '#2563EB' : errors.fit ? ERROR_BORDER : '#E5E7EB',
+                  backgroundColor: info.fit === opt.value ? '#DBEAFE' : 'white',
+                  color: info.fit === opt.value ? '#2563EB' : '#374151',
                 }}
               >
                 {opt.label}
@@ -172,7 +172,7 @@ function ShoesComponent({ insoleKind, info, onChange, errors }: {
 const ROOM_SHOE_ALL_IMAGE = '/manus-storage/room_shoe_notxt_9afb1c1b.png';
 
 const ROOM_SHOE_BORDER_COLORS: Record<string, string> = {
-  pink: '#D62598',
+  pink: '#DB4C97',
   light_gray: '#9CA3AF',
   navy: '#1E3A5F',
 };
@@ -184,7 +184,7 @@ const ROOM_SHOE_BG_COLORS: Record<string, string> = {
 };
 
 const ROOM_SHOE_TEXT_COLORS: Record<string, string> = {
-  pink: '#D62598',
+  pink: '#DB4C97',
   light_gray: '#374151',
   navy: '#ffffff',
 };
@@ -198,7 +198,7 @@ function RoomComponent({ color, onChange, hasError }: {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-100" style={{ backgroundColor: '#FAFAFA' }}>
-        <p className="text-sm font-semibold text-gray-800 flex items-center gap-1">ルームシューズの色 <span className="text-xs font-medium px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: '#D62598' }}>必須</span></p>
+        <p className="text-sm font-semibold text-gray-800 flex items-center gap-1">ルームシューズの色 <span className="text-xs font-medium px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: '#2563EB' }}>必須</span></p>
         <p className="text-xs text-gray-400 mt-0.5">ご希望のシューズの色を選択してください</p>
       </div>
       <div className="p-4 space-y-4">
@@ -346,7 +346,7 @@ export default function Step3ShoesPage() {
         {/* Section header */}
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#D62598' }}>
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#2563EB' }}>
               3
             </div>
             <h2 className="text-base font-bold text-gray-800">靴の情報を入力します</h2>

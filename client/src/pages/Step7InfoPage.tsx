@@ -42,7 +42,7 @@ function Field({ label, required, children }: FieldProps) {
       <label className="text-sm font-semibold text-gray-700 flex items-center gap-1">
         {label}
         {required && (
-          <span className="text-xs font-medium px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: '#D62598' }}>必須</span>
+          <span className="text-xs font-medium px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: '#2563EB' }}>必須</span>
         )}
       </label>
       {children}
@@ -69,7 +69,7 @@ function TextInput({ value, onChange, placeholder, type = 'text', inputMode, dis
       placeholder={placeholder}
       disabled={disabled}
       className={inputClass + (disabled ? ' bg-gray-50 text-gray-500 cursor-not-allowed' : '')}
-      onFocus={e => { if (!disabled) e.target.style.borderColor = '#D62598'; }}
+      onFocus={e => { if (!disabled) e.target.style.borderColor = '#2563EB'; }}
       onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
     />
   );
@@ -257,7 +257,7 @@ export default function Step7InfoPage() {
         {/* Step header */}
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#D62598' }}>7</div>
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#2563EB' }}>7</div>
             <h2 className="text-base font-bold text-gray-800">配送先情報</h2>
           </div>
           <p className="text-xs text-gray-400 ml-8">インソールの利用者情報と配送先を入力してください</p>
@@ -274,7 +274,7 @@ export default function Step7InfoPage() {
               placeholder="例）鈴木 太郎"
               className="w-full h-11 px-3 rounded-xl border-2 text-sm focus:outline-none transition-colors"
               style={{ borderColor: fieldErrors.userName ? ERROR_BORDER : '#E5E7EB', backgroundColor: fieldErrors.userName ? ERROR_BG : 'white' }}
-              onFocus={e => (e.target.style.borderColor = fieldErrors.userName ? ERROR_BORDER : '#D62598')}
+              onFocus={e => (e.target.style.borderColor = fieldErrors.userName ? ERROR_BORDER : '#2563EB')}
               onBlur={e => (e.target.style.borderColor = fieldErrors.userName ? ERROR_BORDER : '#E5E7EB')}
             />
             {fieldErrors.userName && <p className="text-xs font-medium mt-1" style={{ color: ERROR_BORDER }}>お名前を入力してください</p>}
@@ -287,7 +287,7 @@ export default function Step7InfoPage() {
               placeholder="例）スズキ タロウ"
               className="w-full h-11 px-3 rounded-xl border-2 text-sm focus:outline-none transition-colors"
               style={{ borderColor: fieldErrors.userKana ? ERROR_BORDER : '#E5E7EB', backgroundColor: fieldErrors.userKana ? ERROR_BG : 'white' }}
-              onFocus={e => (e.target.style.borderColor = fieldErrors.userKana ? ERROR_BORDER : '#D62598')}
+              onFocus={e => (e.target.style.borderColor = fieldErrors.userKana ? ERROR_BORDER : '#2563EB')}
               onBlur={e => (e.target.style.borderColor = fieldErrors.userKana ? ERROR_BORDER : '#E5E7EB')}
             />
             {fieldErrors.userKana && <p className="text-xs font-medium mt-1" style={{ color: ERROR_BORDER }}>{customerInfo.userKana ? 'フリガナはカタカナで入力してください' : 'フリガナを入力してください'}</p>}
@@ -326,21 +326,21 @@ export default function Step7InfoPage() {
                 onClick={() => setShipMode('account')}
                 className="w-full rounded-xl border-2 p-3 text-left transition-all duration-150 active:scale-[0.99]"
                 style={{
-                  borderColor: shipMode === 'account' ? '#D62598' : '#E5E7EB',
-                  backgroundColor: shipMode === 'account' ? '#FCE4F4' : 'white',
+                  borderColor: shipMode === 'account' ? '#2563EB' : '#E5E7EB',
+                  backgroundColor: shipMode === 'account' ? '#DBEAFE' : 'white',
                 }}
               >
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
-                    style={{ borderColor: shipMode === 'account' ? '#D62598' : '#9CA3AF' }}>
+                    style={{ borderColor: shipMode === 'account' ? '#2563EB' : '#9CA3AF' }}>
                     {shipMode === 'account' && (
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#D62598' }} />
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#2563EB' }} />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <UserCircle className="w-4 h-4" style={{ color: '#D62598' }} />
-                      <span className="text-sm font-semibold" style={{ color: '#D62598' }}>このアカウントの住所に郵送</span>
+                      <UserCircle className="w-4 h-4" style={{ color: '#2563EB' }} />
+                      <span className="text-sm font-semibold" style={{ color: '#2563EB' }}>このアカウントの住所に郵送</span>
                     </div>
                     {accountProfile && (
                       <p className="text-xs text-gray-500 mt-0.5 truncate">{accountSummary}</p>
@@ -353,20 +353,20 @@ export default function Step7InfoPage() {
                 onClick={() => setShipMode('other')}
                 className="w-full rounded-xl border-2 p-3 text-left transition-all duration-150 active:scale-[0.99]"
                 style={{
-                  borderColor: shipMode === 'other' ? '#D62598' : '#E5E7EB',
-                  backgroundColor: shipMode === 'other' ? '#FCE4F4' : 'white',
+                  borderColor: shipMode === 'other' ? '#2563EB' : '#E5E7EB',
+                  backgroundColor: shipMode === 'other' ? '#DBEAFE' : 'white',
                 }}
               >
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
-                    style={{ borderColor: shipMode === 'other' ? '#D62598' : '#9CA3AF' }}>
+                    style={{ borderColor: shipMode === 'other' ? '#2563EB' : '#9CA3AF' }}>
                     {shipMode === 'other' && (
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#D62598' }} />
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#2563EB' }} />
                     )}
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4" style={{ color: '#D62598' }} />
-                    <span className="text-sm font-semibold" style={{ color: '#D62598' }}>別の住所に郵送</span>
+                    <MapPin className="w-4 h-4" style={{ color: '#2563EB' }} />
+                    <span className="text-sm font-semibold" style={{ color: '#2563EB' }}>別の住所に郵送</span>
                   </div>
                 </div>
               </button>
@@ -388,7 +388,7 @@ export default function Step7InfoPage() {
               <button
                 onClick={() => { setReturnToPage('step7'); setCurrentPage('account-profile'); }}
                 className="text-xs font-semibold underline mt-1"
-                style={{ color: '#D62598' }}
+                style={{ color: '#2563EB' }}
               >
                 住所を変更する →
               </button>
@@ -406,7 +406,7 @@ export default function Step7InfoPage() {
                   placeholder="例）鈴木 太郎"
                   className="w-full h-11 px-3 rounded-xl border-2 text-sm focus:outline-none transition-colors"
                   style={{ borderColor: fieldErrors.shipName ? ERROR_BORDER : '#E5E7EB', backgroundColor: fieldErrors.shipName ? ERROR_BG : 'white' }}
-                  onFocus={e => (e.target.style.borderColor = fieldErrors.shipName ? ERROR_BORDER : '#D62598')}
+                  onFocus={e => (e.target.style.borderColor = fieldErrors.shipName ? ERROR_BORDER : '#2563EB')}
                   onBlur={e => (e.target.style.borderColor = fieldErrors.shipName ? ERROR_BORDER : '#E5E7EB')}
                 />
                 {fieldErrors.shipName && <p className="text-xs font-medium mt-1" style={{ color: ERROR_BORDER }}>お名前を入力してください</p>}
@@ -420,7 +420,7 @@ export default function Step7InfoPage() {
                   placeholder="例）090-1234-5678"
                   className="w-full h-11 px-3 rounded-xl border-2 text-sm focus:outline-none transition-colors"
                   style={{ borderColor: fieldErrors.phone ? ERROR_BORDER : '#E5E7EB', backgroundColor: fieldErrors.phone ? ERROR_BG : 'white' }}
-                  onFocus={e => (e.target.style.borderColor = fieldErrors.phone ? ERROR_BORDER : '#D62598')}
+                  onFocus={e => (e.target.style.borderColor = fieldErrors.phone ? ERROR_BORDER : '#2563EB')}
                   onBlur={e => (e.target.style.borderColor = fieldErrors.phone ? ERROR_BORDER : '#E5E7EB')}
                 />
                 {fieldErrors.phone && <p className="text-xs font-medium mt-1" style={{ color: ERROR_BORDER }}>電話番号を入力してください</p>}
@@ -437,9 +437,9 @@ export default function Step7InfoPage() {
                       onClick={() => updateAlt({ isOverseas: opt.value })}
                       className="h-11 rounded-xl text-sm font-medium border-2 transition-all duration-150 active:scale-[0.97]"
                       style={{
-                        borderColor: altForm.isOverseas === opt.value ? '#D62598' : '#E5E7EB',
-                        backgroundColor: altForm.isOverseas === opt.value ? '#FCE4F4' : 'white',
-                        color: altForm.isOverseas === opt.value ? '#D62598' : '#374151',
+                        borderColor: altForm.isOverseas === opt.value ? '#2563EB' : '#E5E7EB',
+                        backgroundColor: altForm.isOverseas === opt.value ? '#DBEAFE' : 'white',
+                        color: altForm.isOverseas === opt.value ? '#2563EB' : '#374151',
                       }}
                     >
                       {opt.label}
@@ -461,14 +461,14 @@ export default function Step7InfoPage() {
                         placeholder="例）123-4567"
                         className="h-11 px-3 rounded-xl border-2 text-sm focus:outline-none transition-colors flex-1"
                         style={{ borderColor: fieldErrors.postalCode ? ERROR_BORDER : '#E5E7EB', backgroundColor: fieldErrors.postalCode ? ERROR_BG : 'white' }}
-                        onFocus={e => (e.target.style.borderColor = fieldErrors.postalCode ? ERROR_BORDER : '#D62598')}
+                        onFocus={e => (e.target.style.borderColor = fieldErrors.postalCode ? ERROR_BORDER : '#2563EB')}
                         onBlur={e => (e.target.style.borderColor = fieldErrors.postalCode ? ERROR_BORDER : '#E5E7EB')}
                       />
                       <button
                         onClick={() => fetchAddress(altForm.postalCode)}
                         disabled={zipLoading}
                         className="h-11 px-4 rounded-xl text-sm font-medium text-white whitespace-nowrap active:scale-[0.97] disabled:opacity-60"
-                        style={{ backgroundColor: '#D62598' }}
+                        style={{ backgroundColor: '#2563EB' }}
                       >
                         {zipLoading ? '検索中…' : '住所検索'}
                       </button>
@@ -480,7 +480,7 @@ export default function Step7InfoPage() {
                       value={altForm.prefecture}
                       onChange={e => updateAlt({ prefecture: e.target.value })}
                       className={inputClass}
-                      onFocus={e => (e.target.style.borderColor = '#D62598')}
+                      onFocus={e => (e.target.style.borderColor = '#2563EB')}
                       onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
                     >
                       <option value="">選択してください</option>

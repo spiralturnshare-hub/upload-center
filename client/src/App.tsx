@@ -26,7 +26,7 @@ import OrderListPage from "./pages/OrderListPage";
 
 // ============================================================
 // Design: ビビッド・フォーム
-// App: PANTONE Pink C (#D62598) イメージカラー
+// App: PANTONE Pink C (#2563EB) イメージカラー
 // Single-page context-based navigation (no URL routing)
 // ============================================================
 

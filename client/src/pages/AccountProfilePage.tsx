@@ -61,7 +61,7 @@ function Field({ label, required, children }: FieldProps) {
       <label className="text-sm font-semibold text-gray-700 flex items-center gap-1">
         {label}
         {required && (
-          <span className="text-xs font-medium px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: '#D62598' }}>必須</span>
+          <span className="text-xs font-medium px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: '#2563EB' }}>必須</span>
         )}
       </label>
       {children}
@@ -70,7 +70,7 @@ function Field({ label, required, children }: FieldProps) {
 }
 
 const inputClass = "w-full h-11 px-3 rounded-xl border-2 border-gray-200 text-sm focus:outline-none transition-colors";
-const inputStyle = { '--focus-color': '#D62598' } as React.CSSProperties;
+const inputStyle = { '--focus-color': '#2563EB' } as React.CSSProperties;
 
 function TextInput({ value, onChange, placeholder, type = 'text', inputMode }: {
   value: string;
@@ -88,7 +88,7 @@ function TextInput({ value, onChange, placeholder, type = 'text', inputMode }: {
       placeholder={placeholder}
       className={inputClass}
       style={inputStyle}
-      onFocus={e => (e.target.style.borderColor = '#D62598')}
+      onFocus={e => (e.target.style.borderColor = '#2563EB')}
       onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
     />
   );
@@ -195,7 +195,7 @@ export default function AccountProfilePage({ returnTo }: { returnTo?: string }) 
     >
       <div className="space-y-5">
         {/* ヘッダー */}
-        <div className="rounded-2xl p-4 text-sm text-gray-600" style={{ backgroundColor: '#FCE4F4' }}>
+        <div className="rounded-2xl p-4 text-sm text-gray-600" style={{ backgroundColor: '#DBEAFE' }}>
           {isEditing
             ? 'アカウントに登録されている住所・連絡先情報を編集できます。'
             : 'インソールの配送先として使用するアカウント情報を登録してください。一度登録すると次回以降自動入力されます。'}
@@ -211,7 +211,7 @@ export default function AccountProfilePage({ returnTo }: { returnTo?: string }) 
                 placeholder="例）鈴木"
                 className="w-full h-11 px-3 rounded-xl border-2 text-sm focus:outline-none transition-colors"
                 style={{ borderColor: fieldErrors.firstName ? ERROR_BORDER : '#E5E7EB', backgroundColor: fieldErrors.firstName ? ERROR_BG : 'white' }}
-                onFocus={e => (e.target.style.borderColor = fieldErrors.firstName ? ERROR_BORDER : '#D62598')}
+                onFocus={e => (e.target.style.borderColor = fieldErrors.firstName ? ERROR_BORDER : '#2563EB')}
                 onBlur={e => (e.target.style.borderColor = fieldErrors.firstName ? ERROR_BORDER : '#E5E7EB')}
               />
             </Field>
@@ -221,7 +221,7 @@ export default function AccountProfilePage({ returnTo }: { returnTo?: string }) 
                 placeholder="例）太郎"
                 className="w-full h-11 px-3 rounded-xl border-2 text-sm focus:outline-none transition-colors"
                 style={{ borderColor: fieldErrors.lastName ? ERROR_BORDER : '#E5E7EB', backgroundColor: fieldErrors.lastName ? ERROR_BG : 'white' }}
-                onFocus={e => (e.target.style.borderColor = fieldErrors.lastName ? ERROR_BORDER : '#D62598')}
+                onFocus={e => (e.target.style.borderColor = fieldErrors.lastName ? ERROR_BORDER : '#2563EB')}
                 onBlur={e => (e.target.style.borderColor = fieldErrors.lastName ? ERROR_BORDER : '#E5E7EB')}
               />
             </Field>
@@ -233,7 +233,7 @@ export default function AccountProfilePage({ returnTo }: { returnTo?: string }) 
                 placeholder="例）スズキ"
                 className="w-full h-11 px-3 rounded-xl border-2 text-sm focus:outline-none transition-colors"
                 style={{ borderColor: fieldErrors.firstNameKana ? ERROR_BORDER : '#E5E7EB', backgroundColor: fieldErrors.firstNameKana ? ERROR_BG : 'white' }}
-                onFocus={e => (e.target.style.borderColor = fieldErrors.firstNameKana ? ERROR_BORDER : '#D62598')}
+                onFocus={e => (e.target.style.borderColor = fieldErrors.firstNameKana ? ERROR_BORDER : '#2563EB')}
                 onBlur={e => (e.target.style.borderColor = fieldErrors.firstNameKana ? ERROR_BORDER : '#E5E7EB')}
               />
               {fieldErrors.firstNameKana && <p className="text-xs font-medium mt-1" style={{ color: ERROR_BORDER }}>{form.firstNameKana ? 'カタカナで入力してください' : '姓（フリガナ）を入力してください'}</p>}
@@ -244,7 +244,7 @@ export default function AccountProfilePage({ returnTo }: { returnTo?: string }) 
                 placeholder="例）タロウ"
                 className="w-full h-11 px-3 rounded-xl border-2 text-sm focus:outline-none transition-colors"
                 style={{ borderColor: fieldErrors.lastNameKana ? ERROR_BORDER : '#E5E7EB', backgroundColor: fieldErrors.lastNameKana ? ERROR_BG : 'white' }}
-                onFocus={e => (e.target.style.borderColor = fieldErrors.lastNameKana ? ERROR_BORDER : '#D62598')}
+                onFocus={e => (e.target.style.borderColor = fieldErrors.lastNameKana ? ERROR_BORDER : '#2563EB')}
                 onBlur={e => (e.target.style.borderColor = fieldErrors.lastNameKana ? ERROR_BORDER : '#E5E7EB')}
               />
               {fieldErrors.lastNameKana && <p className="text-xs font-medium mt-1" style={{ color: ERROR_BORDER }}>{form.lastNameKana ? 'カタカナで入力してください' : '名（フリガナ）を入力してください'}</p>}
@@ -261,7 +261,7 @@ export default function AccountProfilePage({ returnTo }: { returnTo?: string }) 
               placeholder="例）090-1234-5678"
               className="w-full h-11 px-3 rounded-xl border-2 text-sm focus:outline-none transition-colors"
               style={{ borderColor: fieldErrors.phone ? ERROR_BORDER : '#E5E7EB', backgroundColor: fieldErrors.phone ? ERROR_BG : 'white' }}
-              onFocus={e => (e.target.style.borderColor = fieldErrors.phone ? ERROR_BORDER : '#D62598')}
+              onFocus={e => (e.target.style.borderColor = fieldErrors.phone ? ERROR_BORDER : '#2563EB')}
               onBlur={e => (e.target.style.borderColor = fieldErrors.phone ? ERROR_BORDER : '#E5E7EB')}
             />
             {fieldErrors.phone && <p className="text-xs font-medium mt-1" style={{ color: ERROR_BORDER }}>電話番号を入力してください</p>}
@@ -281,9 +281,9 @@ export default function AccountProfilePage({ returnTo }: { returnTo?: string }) 
                 onClick={() => update({ isOverseas: opt.value })}
                 className="h-11 rounded-xl text-sm font-medium border-2 transition-all duration-150 active:scale-[0.97]"
                 style={{
-                  borderColor: form.isOverseas === opt.value ? '#D62598' : '#E5E7EB',
-                  backgroundColor: form.isOverseas === opt.value ? '#FCE4F4' : 'white',
-                  color: form.isOverseas === opt.value ? '#D62598' : '#374151',
+                  borderColor: form.isOverseas === opt.value ? '#2563EB' : '#E5E7EB',
+                  backgroundColor: form.isOverseas === opt.value ? '#DBEAFE' : 'white',
+                  color: form.isOverseas === opt.value ? '#2563EB' : '#374151',
                 }}
               >
                 {opt.label}
@@ -304,14 +304,14 @@ export default function AccountProfilePage({ returnTo }: { returnTo?: string }) 
                     placeholder="例）123-4567"
                     className="h-11 px-3 rounded-xl border-2 text-sm focus:outline-none transition-colors flex-1"
                     style={{ borderColor: fieldErrors.postalCode ? ERROR_BORDER : '#E5E7EB', backgroundColor: fieldErrors.postalCode ? ERROR_BG : 'white' }}
-                    onFocus={e => (e.target.style.borderColor = fieldErrors.postalCode ? ERROR_BORDER : '#D62598')}
+                    onFocus={e => (e.target.style.borderColor = fieldErrors.postalCode ? ERROR_BORDER : '#2563EB')}
                     onBlur={e => (e.target.style.borderColor = fieldErrors.postalCode ? ERROR_BORDER : '#E5E7EB')}
                   />
                   <button
                     onClick={() => fetchAddress(form.postalCode)}
                     disabled={zipLoading}
                     className="h-11 px-4 rounded-xl text-sm font-medium text-white whitespace-nowrap active:scale-[0.97] disabled:opacity-60"
-                    style={{ backgroundColor: '#D62598' }}
+                    style={{ backgroundColor: '#2563EB' }}
                   >
                     {zipLoading ? '検索中…' : '住所検索'}
                   </button>
@@ -323,7 +323,7 @@ export default function AccountProfilePage({ returnTo }: { returnTo?: string }) 
                   value={form.prefecture}
                   onChange={e => update({ prefecture: e.target.value })}
                   className={inputClass}
-                  onFocus={e => (e.target.style.borderColor = '#D62598')}
+                  onFocus={e => (e.target.style.borderColor = '#2563EB')}
                   onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
                 >
                   <option value="">選択してください</option>

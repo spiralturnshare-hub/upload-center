@@ -139,19 +139,19 @@ export default function GuestUploadPage() {
                   }}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border text-left transition-all ${
                     selectedReason === reason
-                      ? 'border-pink-400 bg-pink-50'
+                      ? 'border-blue-400 bg-blue-50'
                       : reasonError ? 'border-orange-400 bg-orange-50' : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
                 >
                   <div
                     className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
                       selectedReason === reason
-                        ? 'border-pink-500'
+                        ? 'border-blue-500'
                         : 'border-gray-300'
                     }`}
                   >
                     {selectedReason === reason && (
-                      <div className="w-2 h-2 rounded-full bg-pink-500" />
+                      <div className="w-2 h-2 rounded-full bg-blue-500" />
                     )}
                   </div>
                   <span className="text-sm text-gray-700 leading-snug">{reason}</span>
@@ -180,7 +180,7 @@ export default function GuestUploadPage() {
             <Button
               onClick={handleNextFromQuestionnaire}
               className="w-full font-semibold"
-              style={{ backgroundColor: '#D62598' }}
+              style={{ backgroundColor: '#2563EB' }}
             >
               次へ
             </Button>
@@ -202,7 +202,7 @@ export default function GuestUploadPage() {
               <Button
                 onClick={handleGoToPaymentId}
                 className="w-full font-semibold"
-                style={{ backgroundColor: '#D62598' }}
+                style={{ backgroundColor: '#2563EB' }}
               >
                 決済完了IDでアップロード
               </Button>
@@ -256,7 +256,7 @@ export default function GuestUploadPage() {
             <Button
               onClick={handleNextFromInsoleSelect}
               className="w-full font-semibold"
-              style={{ backgroundColor: '#D62598' }}
+              style={{ backgroundColor: '#2563EB' }}
             >
               次へ
             </Button>
@@ -291,12 +291,12 @@ export default function GuestUploadPage() {
               onClick={() => { setPhotoChecked(!photoChecked); setPhotoError(false); }}
               className={`w-full flex items-center gap-3 px-4 py-4 rounded-lg border transition-all ${
                 photoChecked
-                  ? 'border-pink-400 bg-pink-50'
+                  ? 'border-blue-400 bg-blue-50'
                   : photoError ? 'border-orange-400 bg-orange-50' : 'border-gray-200 bg-white hover:border-gray-300'
               }`}
             >
               {photoChecked ? (
-                <CheckSquare className="w-5 h-5 text-pink-500 shrink-0" />
+                <CheckSquare className="w-5 h-5 text-blue-500 shrink-0" />
               ) : (
                 <Square className="w-5 h-5 text-gray-400 shrink-0" />
               )}
@@ -310,7 +310,7 @@ export default function GuestUploadPage() {
               <Button
                 onClick={handleStartGuestUpload}
                 className="w-full font-semibold"
-                style={{ backgroundColor: '#D62598' }}
+                style={{ backgroundColor: '#2563EB' }}
               >
                 アップロードを開始する
               </Button>

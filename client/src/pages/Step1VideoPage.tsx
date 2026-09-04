@@ -159,7 +159,7 @@ export default function Step1VideoPage() {
         {/* Section header */}
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#D62598' }}>
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#2563EB' }}>
               1
             </div>
             <h2 className="text-base font-bold text-gray-800">動画のアップロードを行います</h2>
@@ -264,13 +264,13 @@ function VideoUploadCard({
       >
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: isUploaded ? '#DCFCE7' : showMissing ? '#FDE9CC' : '#FCE4F4' }}
+          style={{ backgroundColor: isUploaded ? '#DCFCE7' : showMissing ? '#FDE9CC' : '#DBEAFE' }}
         >
           {isUploaded
             ? <CheckCircle2 className="w-4 h-4 text-green-500" />
             : showMissing
               ? <AlertTriangle className="w-4 h-4" style={{ color: '#E8890C' }} />
-              : <Video className="w-4 h-4" style={{ color: '#D62598' }} />
+              : <Video className="w-4 h-4" style={{ color: '#2563EB' }} />
           }
         </div>
         <div className="flex-1 min-w-0">
@@ -285,7 +285,7 @@ function VideoUploadCard({
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 hover:opacity-80 active:scale-[0.97] flex-shrink-0"
-          style={{ borderColor: '#D62598', color: '#D62598', backgroundColor: '#FCE4F4' }}
+          style={{ borderColor: '#2563EB', color: '#2563EB', backgroundColor: '#DBEAFE' }}
           onClick={(e) => e.stopPropagation()}
         >
           <ExternalLink className="w-3 h-3" />

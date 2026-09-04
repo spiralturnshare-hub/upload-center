@@ -28,7 +28,7 @@ import {
   type UploadFullRecord,
 } from '@/lib/supabase';
 
-const PINK = '#D62598';
+const PINK = '#2563EB';
 const inputClass = 'w-full h-11 px-3 rounded-xl border-2 border-gray-200 text-sm focus:outline-none transition-colors';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

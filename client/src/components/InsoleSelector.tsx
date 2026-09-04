@@ -6,7 +6,7 @@ import { INSOLE_DISPLAY_NAMES, INSOLE_GROUPS } from '@/lib/insoleConfig';
 // ============================================================
 // Design: ビビッド・フォーム
 // InsoleSelector: インソール種別選択コンポーネント（最大2つ・同一種別2つも可）
-// Primary: PANTONE Pink C (#D62598)
+// Primary: PANTONE Pink C (#2563EB)
 //
 // 選択ロジック：
 //   - 各種別は 0〜2 個まで選択可能
@@ -68,7 +68,7 @@ export default function InsoleSelector({ value, onChange, maxCount = 2 }: Insole
         {value.length === 0 ? (
           <div
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border-2 border-dashed w-fit"
-            style={{ borderColor: '#D62598', color: '#D62598' }}
+            style={{ borderColor: '#2563EB', color: '#2563EB' }}
           >
             <span>種別を選択してください（必須）</span>
           </div>
@@ -78,11 +78,11 @@ export default function InsoleSelector({ value, onChange, maxCount = 2 }: Insole
               <div
                 key={`${kind}-${idx}`}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-white"
-                style={{ backgroundColor: '#D62598' }}
+                style={{ backgroundColor: '#2563EB' }}
               >
                 <span
                   className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-[10px] font-bold"
-                  style={{ color: '#D62598' }}
+                  style={{ color: '#2563EB' }}
                 >
                   {idx + 1}
                 </span>
@@ -99,7 +99,7 @@ export default function InsoleSelector({ value, onChange, maxCount = 2 }: Insole
             {canAddMore && (
               <div
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border-2 border-dashed"
-                style={{ borderColor: '#D62598', color: '#D62598' }}
+                style={{ borderColor: '#2563EB', color: '#2563EB' }}
               >
                 <span>+ {maxCount - totalSelected}つ目を選択（任意）</span>
               </div>
@@ -124,7 +124,7 @@ export default function InsoleSelector({ value, onChange, maxCount = 2 }: Insole
                   {groupSelectedCount > 0 && (
                     <span
                       className="text-xs font-bold text-white rounded-full w-5 h-5 flex items-center justify-center"
-                      style={{ backgroundColor: '#D62598' }}
+                      style={{ backgroundColor: '#2563EB' }}
                     >
                       {groupSelectedCount}
                     </span>
@@ -150,8 +150,8 @@ export default function InsoleSelector({ value, onChange, maxCount = 2 }: Insole
                         key={kind}
                         className="relative rounded-xl border-2 transition-all duration-150 overflow-hidden"
                         style={{
-                          borderColor: isSelected ? '#D62598' : '#E5E7EB',
-                          backgroundColor: isSelected ? '#FCE4F4' : 'white',
+                          borderColor: isSelected ? '#2563EB' : '#E5E7EB',
+                          backgroundColor: isSelected ? '#DBEAFE' : 'white',
                         }}
                       >
                         {count === 0 ? (
@@ -169,7 +169,7 @@ export default function InsoleSelector({ value, onChange, maxCount = 2 }: Insole
                           <div className="h-12 px-2 flex items-center justify-between gap-1">
                             <span
                               className="text-xs font-semibold flex-1 leading-tight"
-                              style={{ color: '#D62598' }}
+                              style={{ color: '#2563EB' }}
                             >
                               {INSOLE_DISPLAY_NAMES[kind]}
                             </span>
@@ -178,7 +178,7 @@ export default function InsoleSelector({ value, onChange, maxCount = 2 }: Insole
                               <button
                                 onClick={() => removeOne(kind)}
                                 className="w-6 h-6 rounded-full flex items-center justify-center transition-colors active:scale-90"
-                                style={{ backgroundColor: '#D62598' }}
+                                style={{ backgroundColor: '#2563EB' }}
                                 aria-label="1つ減らす"
                               >
                                 <Minus className="w-3 h-3 text-white" />
@@ -186,7 +186,7 @@ export default function InsoleSelector({ value, onChange, maxCount = 2 }: Insole
                               {/* カウント表示 */}
                               <span
                                 className="w-5 text-center text-sm font-bold"
-                                style={{ color: '#D62598' }}
+                                style={{ color: '#2563EB' }}
                               >
                                 {count}
                               </span>
@@ -195,7 +195,7 @@ export default function InsoleSelector({ value, onChange, maxCount = 2 }: Insole
                                 onClick={() => addInsole(kind)}
                                 disabled={!canAddMore || count >= maxCount}
                                 className="w-6 h-6 rounded-full flex items-center justify-center transition-colors active:scale-90 disabled:opacity-30 disabled:cursor-not-allowed"
-                                style={{ backgroundColor: '#D62598' }}
+                                style={{ backgroundColor: '#2563EB' }}
                                 aria-label="1つ増やす"
                               >
                                 <Plus className="w-3 h-3 text-white" />

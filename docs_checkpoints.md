@@ -282,3 +282,16 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
     `startNew`/`resume` は `o.orderId`(null 可)を渡すよう修正(旧: `o.id` を注文IDとして誤用)。
     カード表記に「ゲストアップロード」を追加。
 - ビルド OK。DB 変更なし。
+
+## 2026-09-04: テーマカラーをピンク→鮮やかなブルーに(OEM 共用のため)
+
+- 冨永社長指示: このアップロードセンターは OEM 各社も使うため、当社ブランド色の PANTONE Pink C(#D62598)をやめ、中立で当たり障りのない鮮やかなブルーに全面変更。
+- 置換(client/src 全 93ファイル + index.css を sed 一括):
+  #D62598→#2563EB / #A81B77・#C01F88→#1D4ED8 / #FCE4F4→#DBEAFE / #FFF0F9→#EFF6FF /
+  #F062B8→#60A5FA / #F0A0D0・#F0A8D8・#E8A0D4→#93C5FD / #E84DB5→#3B82F6 /
+  Tailwind `-pink-`→`-blue-` / index.css の oklch hue 335→264(--primary/--ring/--chart 等)。
+- **維持**: 完了した注文・保証サービスの薄いベージュ(#FAF6EE/#ECE3D3/#EFEAE0)、
+  警告オレンジ(#E8890C 等)、成功グリーン(#F0FDF4 等)、グレー。
+- **例外復元**: Step3 ルームシューズの色選択の `pink` スウォッチは実際のピンクに戻す(#DB4C97 / bg #FCE4F4)。テーマではなく商品の色名のため。
+- token 名 `--color-pink-brand`・component 名 `PinkButton`・const `PINK` は据え置き(値はブルー、コメントで明記)。将来リネームは別タスク。
+- ビルド OK。DB 変更なし。

@@ -7,7 +7,7 @@ import { fetchOrderDashboard, supabase } from '@/lib/supabase';
 // ============================================================
 // Design: ビビッド・フォーム
 // HomePage: アップロードセンター ホーム画面
-// Primary: PANTONE Pink C (#D62598)
+// Primary: PANTONE Pink C (#2563EB)
 //
 // 2026-09-04 冨永社長指示で整理:
 //   ヘッダー = ロゴ(中央) / 「アップロードセンター」(中央) / アカウント情報 + サインアウト(小)
@@ -23,9 +23,9 @@ import { fetchOrderDashboard, supabase } from '@/lib/supabase';
 // OEM 各社も同じものを使うため、特定ロゴを出すと発行元が分からなくなる。
 // 代わりに「オーダーメイドインソール / アップロードセンター」の2段テキスト(同じフォント・同じサイズ)。
 
-const PINK = '#D62598';
-const PINK_DARK = '#a81b77';
-const PINK_BG = '#FCE4F4';
+const PINK = '#2563EB';
+const PINK_DARK = '#1D4ED8';
+const PINK_BG = '#DBEAFE';
 // 中間トーン: 中断 / 完了 / 保証 の背景。白カード(その他のアップロード)との差をつける
 const BEIGE_BG = '#FAF6EE';
 const BEIGE_BORDER = '#ECE3D3';
@@ -106,7 +106,7 @@ export default function HomePage() {
           {isLoggedIn ? (
             <button
               onClick={() => setCurrentPage('account-profile')}
-              className="flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-semibold transition-colors hover:bg-pink-50"
+              className="flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-semibold transition-colors hover:bg-blue-50"
               style={{ borderColor: PINK, color: PINK }}
             >
               <User className="w-3.5 h-3.5" />
@@ -144,7 +144,7 @@ export default function HomePage() {
                 <button
                   onClick={() => openOrderList('needing')}
                   className="relative w-full overflow-hidden rounded-2xl p-5 text-left shadow-sm border-2 transition-all duration-150 hover:shadow-md active:scale-[0.98]"
-                  style={{ background: `linear-gradient(135deg, ${PINK} 0%, ${PINK_DARK} 100%)`, borderColor: '#F062B8' }}
+                  style={{ background: `linear-gradient(135deg, ${PINK} 0%, ${PINK_DARK} 100%)`, borderColor: '#60A5FA' }}
                 >
                   {/* 装飾の柄(半透明の円) */}
                   <div className="pointer-events-none absolute -right-8 -top-10 w-32 h-32 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.15)' }} />

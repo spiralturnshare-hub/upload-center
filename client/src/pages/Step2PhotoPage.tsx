@@ -293,7 +293,7 @@ export default function Step2PhotoPage() {
         {/* Section header */}
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#D62598' }}>
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#2563EB' }}>
               2
             </div>
             <h2 className="text-base font-bold text-gray-800">画像のアップロードを行います</h2>
@@ -308,11 +308,11 @@ export default function Step2PhotoPage() {
           >
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: footDone ? '#DCFCE7' : '#FCE4F4' }}
+              style={{ backgroundColor: footDone ? '#DCFCE7' : '#DBEAFE' }}
             >
               {footDone
                 ? <CheckCircle2 className="w-4 h-4 text-green-500" />
-                : <Footprints className="w-4 h-4" style={{ color: '#D62598' }} />
+                : <Footprints className="w-4 h-4" style={{ color: '#2563EB' }} />
               }
             </div>
             <div className="flex-1 min-w-0">
@@ -326,7 +326,7 @@ export default function Step2PhotoPage() {
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 hover:opacity-80 active:scale-[0.97] flex-shrink-0"
-              style={{ borderColor: '#D62598', color: '#D62598', backgroundColor: '#FCE4F4' }}
+              style={{ borderColor: '#2563EB', color: '#2563EB', backgroundColor: '#DBEAFE' }}
               onClick={(e) => e.stopPropagation()}
             >
               <ExternalLink className="w-3 h-3" />
@@ -340,7 +340,7 @@ export default function Step2PhotoPage() {
               type="button"
               onClick={launchFootGuidance}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold text-white transition-all duration-150 hover:opacity-90 active:scale-[0.98]"
-              style={{ backgroundColor: '#D62598' }}
+              style={{ backgroundColor: '#2563EB' }}
             >
               <Camera className="w-4 h-4" />
               かんたん撮影アプリを起動
@@ -381,11 +381,11 @@ export default function Step2PhotoPage() {
               >
                 <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: done ? '#DCFCE7' : '#FCE4F4' }}
+                  style={{ backgroundColor: done ? '#DCFCE7' : '#DBEAFE' }}
                 >
                   {done
                     ? <CheckCircle2 className="w-4 h-4 text-green-500" />
-                    : <Shirt className="w-4 h-4" style={{ color: '#D62598' }} />
+                    : <Shirt className="w-4 h-4" style={{ color: '#2563EB' }} />
                   }
                 </div>
                 <div className="flex-1 min-w-0">
@@ -401,7 +401,7 @@ export default function Step2PhotoPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 hover:opacity-80 active:scale-[0.97] flex-shrink-0"
-                  style={{ borderColor: '#D62598', color: '#D62598', backgroundColor: '#FCE4F4' }}
+                  style={{ borderColor: '#2563EB', color: '#2563EB', backgroundColor: '#DBEAFE' }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <ExternalLink className="w-3 h-3" />
@@ -426,9 +426,9 @@ export default function Step2PhotoPage() {
         })}
 
         {/* Info */}
-        <div className="rounded-xl p-4 flex gap-3" style={{ backgroundColor: '#FCE4F4' }}>
-          <Info className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#D62598' }} />
-          <p className="text-xs leading-relaxed" style={{ color: '#a81b77' }}>
+        <div className="rounded-xl p-4 flex gap-3" style={{ backgroundColor: '#DBEAFE' }}>
+          <Info className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#2563EB' }} />
+          <p className="text-xs leading-relaxed" style={{ color: '#1D4ED8' }}>
             ※ 中敷きが糊付けされ取り外しづらい場合は、ドライヤーで適度に温めてから取り外してください
           </p>
         </div>

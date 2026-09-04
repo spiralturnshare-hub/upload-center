@@ -44,7 +44,7 @@ function FootSection({ side, imageSrc, selected, onToggle }: FootSectionProps) {
         {selected.length > 0 && (
           <span
             className="text-xs font-medium px-2 py-0.5 rounded-full"
-            style={{ backgroundColor: '#FCE4F4', color: '#D62598' }}
+            style={{ backgroundColor: '#DBEAFE', color: '#2563EB' }}
           >
             {selected.length}箇所選択中
           </span>
@@ -76,9 +76,9 @@ function FootSection({ side, imageSrc, selected, onToggle }: FootSectionProps) {
                 onClick={() => onToggle(id)}
                 className="w-11 h-11 rounded-full flex items-center justify-center text-base font-bold transition-all duration-150 active:scale-90"
                 style={{
-                  backgroundColor: isSelected ? '#D62598' : '#F3F4F6',
-                  color: isSelected ? 'white' : '#D62598',
-                  border: `2px solid ${isSelected ? '#D62598' : '#E5E7EB'}`,
+                  backgroundColor: isSelected ? '#2563EB' : '#F3F4F6',
+                  color: isSelected ? 'white' : '#2563EB',
+                  border: `2px solid ${isSelected ? '#2563EB' : '#E5E7EB'}`,
                   boxShadow: isSelected ? '0 0 0 3px rgba(214,37,152,0.2)' : 'none',
                 }}
                 aria-label={`${id}番`}
@@ -96,7 +96,7 @@ function FootSection({ side, imageSrc, selected, onToggle }: FootSectionProps) {
               <span
                 key={id}
                 className="px-2.5 py-1 rounded-full text-xs font-medium"
-                style={{ backgroundColor: '#FCE4F4', color: '#D62598' }}
+                style={{ backgroundColor: '#DBEAFE', color: '#2563EB' }}
               >
                 {FOOT_LABELS[id]} 番
               </span>
@@ -172,7 +172,7 @@ export default function Step6TakoPage() {
           <div className="flex items-center gap-2 mb-1">
             <div
               className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
-              style={{ backgroundColor: '#D62598' }}
+              style={{ backgroundColor: '#2563EB' }}
             >
               6
             </div>
@@ -220,7 +220,7 @@ export default function Step6TakoPage() {
                 placeholder="タコや魚の目、その他気になる症状などをご記入ください"
                 rows={4}
                 className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none transition-colors"
-                onFocus={e => (e.target.style.borderColor = '#D62598')}
+                onFocus={e => (e.target.style.borderColor = '#2563EB')}
                 onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
               />
             </div>
@@ -242,7 +242,7 @@ export default function Step6TakoPage() {
                     >
                       <div
                         className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: '#FCE4F4' }}
+                        style={{ backgroundColor: '#DBEAFE' }}
                       >
                         {file.type.startsWith('image/') ? (
                           <img
@@ -251,7 +251,7 @@ export default function Step6TakoPage() {
                             className="w-8 h-8 rounded-lg object-cover"
                           />
                         ) : (
-                          <Paperclip className="w-4 h-4" style={{ color: '#D62598' }} />
+                          <Paperclip className="w-4 h-4" style={{ color: '#2563EB' }} />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -281,7 +281,7 @@ export default function Step6TakoPage() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-2 w-full h-14 rounded-xl border-2 border-dashed justify-center text-sm font-medium transition-all active:scale-[0.97]"
-                style={{ borderColor: '#D62598', color: '#D62598', backgroundColor: '#FDF0FA' }}
+                style={{ borderColor: '#2563EB', color: '#2563EB', backgroundColor: '#FDF0FA' }}
               >
                 <Camera className="w-4 h-4" />
                 <span>ファイルを追加する</span>

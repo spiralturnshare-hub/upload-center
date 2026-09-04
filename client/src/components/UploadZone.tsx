@@ -83,8 +83,8 @@ export default function UploadZone({
           relative rounded-2xl border-2 border-dashed p-6 text-center cursor-pointer
           transition-all duration-200
           ${isDragging
-            ? 'border-[#D62598] bg-[#FCE4F4]'
-            : 'border-gray-200 bg-gray-50 hover:border-[#D62598] hover:bg-[#FCE4F4]/50'
+            ? 'border-[#2563EB] bg-[#DBEAFE]'
+            : 'border-gray-200 bg-gray-50 hover:border-[#2563EB] hover:bg-[#DBEAFE]/50'
           }
         `}
       >
@@ -99,12 +99,12 @@ export default function UploadZone({
 
         {status === 'uploading' ? (
           <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-10 h-10 animate-spin" style={{ color: '#D62598' }} />
+            <Loader2 className="w-10 h-10 animate-spin" style={{ color: '#2563EB' }} />
             <p className="text-sm font-medium text-gray-600">アップロード中...</p>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
                 className="h-2 rounded-full transition-all duration-300"
-                style={{ width: `${uploadProgress}%`, backgroundColor: '#D62598' }}
+                style={{ width: `${uploadProgress}%`, backgroundColor: '#2563EB' }}
               />
             </div>
             <p className="text-xs text-gray-400">アップロードには時間がかかる場合があります</p>
@@ -124,9 +124,9 @@ export default function UploadZone({
           <div className="flex flex-col items-center gap-3">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center"
-              style={{ backgroundColor: '#FCE4F4' }}
+              style={{ backgroundColor: '#DBEAFE' }}
             >
-              <Icon className="w-7 h-7" style={{ color: '#D62598' }} />
+              <Icon className="w-7 h-7" style={{ color: '#2563EB' }} />
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-700">
@@ -151,9 +151,9 @@ export default function UploadZone({
             >
               <div
                 className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: '#FCE4F4' }}
+                style={{ backgroundColor: '#DBEAFE' }}
               >
-                <Icon className="w-4 h-4" style={{ color: '#D62598' }} />
+                <Icon className="w-4 h-4" style={{ color: '#2563EB' }} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-700 truncate">{file.name}</p>

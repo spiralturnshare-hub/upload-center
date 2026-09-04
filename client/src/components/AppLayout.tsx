@@ -10,7 +10,7 @@ export interface AppLayoutHandle {
 // ============================================================
 // Design: ビビッド・フォーム
 // AppLayout: モバイルファーストのウィザードレイアウト
-// Primary: PANTONE Pink C (#D62598)
+// Primary: PANTONE Pink C (#2563EB)
 //
 // 顧客情報バー: ステップ画面の上部に顧客氏名＋インソール種別を常時表示
 // 代行スタッフが「誰の・何のインソール」かを常に把握できるようにする
@@ -94,7 +94,7 @@ const AppLayout = forwardRef<AppLayoutHandle, AppLayoutProps>(function AppLayout
               className="absolute inset-y-0 left-0 transition-all duration-500 ease-out"
               style={{
                 width: `${progress}%`,
-                background: 'linear-gradient(90deg, #D62598, #e84db5)',
+                background: 'linear-gradient(90deg, #2563EB, #3B82F6)',
               }}
             />
           </div>
@@ -105,11 +105,11 @@ const AppLayout = forwardRef<AppLayoutHandle, AppLayoutProps>(function AppLayout
       {currentStep !== undefined && (
         <div
           className="sticky top-[57px] z-10 px-4 py-2 flex items-center gap-2 border-b"
-          style={{ backgroundColor: '#FCE4F4', borderColor: '#f0a8d8' }}
+          style={{ backgroundColor: '#DBEAFE', borderColor: '#93C5FD' }}
         >
           <div
             className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: '#D62598' }}
+            style={{ backgroundColor: '#2563EB' }}
           >
             <User className="w-3.5 h-3.5 text-white" />
           </div>
@@ -144,7 +144,7 @@ const AppLayout = forwardRef<AppLayoutHandle, AppLayoutProps>(function AppLayout
                 style={{
                   backgroundColor:
                     i + 1 <= currentStep
-                      ? '#D62598'
+                      ? '#2563EB'
                       : '#E5E7EB',
                   opacity: i + 1 <= currentStep ? 1 : 0.4,
                   transform: i + 1 === currentStep ? 'scale(1.3)' : 'scale(1)',

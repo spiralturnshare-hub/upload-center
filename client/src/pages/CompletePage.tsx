@@ -22,7 +22,7 @@ export default function CompletePage() {
           <span className="text-base font-bold text-gray-800">アップロードセンター</span>
         </div>
         {/* Full progress bar */}
-        <div className="h-1" style={{ background: 'linear-gradient(90deg, #D62598, #e84db5)' }} />
+        <div className="h-1" style={{ background: 'linear-gradient(90deg, #2563EB, #3B82F6)' }} />
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-10">
@@ -32,7 +32,7 @@ export default function CompletePage() {
           <div
             className="w-24 h-24 rounded-full flex items-center justify-center shadow-lg"
             style={{
-              background: 'linear-gradient(135deg, #D62598, #a81b77)',
+              background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
               boxShadow: '0 8px 32px rgba(214, 37, 152, 0.3)',
             }}
           >
@@ -55,7 +55,7 @@ export default function CompletePage() {
               <div
                 key={i}
                 className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: '#D62598' }}
+                style={{ backgroundColor: '#2563EB' }}
               />
             ))}
           </div>
@@ -66,9 +66,9 @@ export default function CompletePage() {
               <div className="flex items-center gap-2 mb-2">
                 <div
                   className="w-6 h-6 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: '#FCE4F4' }}
+                  style={{ backgroundColor: '#DBEAFE' }}
                 >
-                  <ArrowRight className="w-3 h-3" style={{ color: '#D62598' }} />
+                  <ArrowRight className="w-3 h-3" style={{ color: '#2563EB' }} />
                 </div>
                 <h3 className="text-sm font-semibold text-gray-800">今後の流れについて</h3>
               </div>
@@ -82,9 +82,9 @@ export default function CompletePage() {
               <div className="flex items-center gap-2 mb-2">
                 <div
                   className="w-6 h-6 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: '#FCE4F4' }}
+                  style={{ backgroundColor: '#DBEAFE' }}
                 >
-                  <ArrowRight className="w-3 h-3" style={{ color: '#D62598' }} />
+                  <ArrowRight className="w-3 h-3" style={{ color: '#2563EB' }} />
                 </div>
                 <h3 className="text-sm font-semibold text-gray-800">ルーム用インソールについて</h3>
               </div>

@@ -9,7 +9,7 @@ const ERROR_BG = '#FFF7ED';
 // ============================================================
 // Design: ビビッド・フォーム
 // PreShootingDialog: アップロード開始前の事前撮影確認ダイアログ
-// Primary: PANTONE Pink C (#D62598)
+// Primary: PANTONE Pink C (#2563EB)
 //
 // 元のDartコード: confirm_dialog_take_photo_required
 // リンク先: https://dataguide.insoleorder.jp/
@@ -75,7 +75,7 @@ export default function PreShootingDialog({ open, onClose, onConfirm }: PreShoot
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border-2 text-sm font-semibold transition-all duration-150 active:scale-[0.97] hover:opacity-80"
-            style={{ borderColor: '#D62598', color: '#D62598' }}
+            style={{ borderColor: '#2563EB', color: '#2563EB' }}
           >
             <Video className="w-4 h-4 flex-shrink-0" />
             <span>撮影方法を確認する</span>
@@ -94,8 +94,8 @@ export default function PreShootingDialog({ open, onClose, onConfirm }: PreShoot
             <div
               className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-all duration-150 mt-0.5"
               style={{
-                borderColor: checked ? '#D62598' : checkError ? ERROR_BORDER : '#E5E7EB',
-                backgroundColor: checked ? '#D62598' : 'transparent',
+                borderColor: checked ? '#2563EB' : checkError ? ERROR_BORDER : '#E5E7EB',
+                backgroundColor: checked ? '#2563EB' : 'transparent',
               }}
             >
               {checked && (

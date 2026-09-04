@@ -64,14 +64,14 @@ function RadioGroup({ label, options, value, onChange }: {
           <button key={opt} onClick={() => onChange(opt)}
             className="w-full flex items-center gap-3 min-h-11 px-4 py-2 rounded-xl border-2 text-sm text-left transition-all duration-150 active:scale-[0.98]"
             style={{
-              borderColor: value === opt ? '#D62598' : '#E5E7EB',
-              backgroundColor: value === opt ? '#FCE4F4' : 'white',
-              color: value === opt ? '#D62598' : '#374151',
+              borderColor: value === opt ? '#2563EB' : '#E5E7EB',
+              backgroundColor: value === opt ? '#DBEAFE' : 'white',
+              color: value === opt ? '#2563EB' : '#374151',
             }}
           >
             <div className="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-              style={{ borderColor: value === opt ? '#D62598' : '#D1D5DB' }}>
-              {value === opt && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#D62598' }} />}
+              style={{ borderColor: value === opt ? '#2563EB' : '#D1D5DB' }}>
+              {value === opt && <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#2563EB' }} />}
             </div>
             <span className="text-xs leading-tight">{opt}</span>
           </button>
@@ -98,13 +98,13 @@ function CheckboxGroup({ label, options, values, onChange }: {
             <button key={opt} onClick={() => toggle(opt)}
               className="w-full flex items-center gap-3 min-h-11 px-4 py-2 rounded-xl border-2 text-sm text-left transition-all duration-150 active:scale-[0.98]"
               style={{
-                borderColor: checked ? '#D62598' : '#E5E7EB',
-                backgroundColor: checked ? '#FCE4F4' : 'white',
-                color: checked ? '#D62598' : '#374151',
+                borderColor: checked ? '#2563EB' : '#E5E7EB',
+                backgroundColor: checked ? '#DBEAFE' : 'white',
+                color: checked ? '#2563EB' : '#374151',
               }}
             >
               <div className="w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0"
-                style={{ borderColor: checked ? '#D62598' : '#D1D5DB', backgroundColor: checked ? '#D62598' : 'transparent' }}>
+                style={{ borderColor: checked ? '#2563EB' : '#D1D5DB', backgroundColor: checked ? '#2563EB' : 'transparent' }}>
                 {checked && (
                   <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -206,7 +206,7 @@ export default function Step5PurposePage() {
 
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#D62598' }}>5</div>
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#2563EB' }}>5</div>
             <h2 className="text-base font-bold text-gray-800">インソールの作製目的</h2>
           </div>
           <p className="text-xs text-gray-400 ml-8">インソールの作製目的についてお聞きします</p>
@@ -251,7 +251,7 @@ export default function Step5PurposePage() {
                       placeholder="その他の内容を記述してください"
                       rows={3}
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none transition-all resize-none"
-                      onFocus={e => (e.target.style.borderColor = '#D62598')}
+                      onFocus={e => (e.target.style.borderColor = '#2563EB')}
                       onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
                     />
                   </div>
@@ -286,7 +286,7 @@ export default function Step5PurposePage() {
                       placeholder="その他の内容を記述してください"
                       rows={3}
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none transition-all resize-none"
-                      onFocus={e => (e.target.style.borderColor = '#D62598')}
+                      onFocus={e => (e.target.style.borderColor = '#2563EB')}
                       onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
                     />
                   </div>
@@ -315,7 +315,7 @@ export default function Step5PurposePage() {
                       placeholder="その他の内容を記述してください"
                       rows={3}
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none transition-all resize-none"
-                      onFocus={e => (e.target.style.borderColor = '#D62598')}
+                      onFocus={e => (e.target.style.borderColor = '#2563EB')}
                       onBlur={e => (e.target.style.borderColor = '#E5E7EB')}
                     />
                   </div>
@@ -328,7 +328,7 @@ export default function Step5PurposePage() {
                 />
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#D62598' }}>右</div>
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#2563EB' }}>右</div>
                     <span className="text-xs font-semibold text-gray-600">右足で重視する項目</span>
                   </div>
                   <CheckboxGroup
@@ -340,7 +340,7 @@ export default function Step5PurposePage() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#D62598' }}>左</div>
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#2563EB' }}>左</div>
                     <span className="text-xs font-semibold text-gray-600">左足で重視する項目</span>
                   </div>
                   <CheckboxGroup

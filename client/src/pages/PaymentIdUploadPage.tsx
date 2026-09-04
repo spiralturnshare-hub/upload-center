@@ -135,7 +135,7 @@ export default function PaymentIdUploadPage() {
                   <p className="whitespace-pre-line">{error}</p>
                 </div>
               )}
-              <Button onClick={handleVerify} disabled={loading} className="w-full" style={{ backgroundColor: '#D62598' }}>
+              <Button onClick={handleVerify} disabled={loading} className="w-full" style={{ backgroundColor: '#2563EB' }}>
                 {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />照合中...</> : '注文を確認する'}
               </Button>
             </div>
@@ -160,7 +160,7 @@ export default function PaymentIdUploadPage() {
                 <span className="font-mono text-gray-800">{paymentId}</span>
               </div>
             </div>
-            <Button onClick={handleStartUpload} className="w-full" style={{ backgroundColor: '#D62598' }}>
+            <Button onClick={handleStartUpload} className="w-full" style={{ backgroundColor: '#2563EB' }}>
               {hasExistingUpload ? 'アップロード内容を確認・修正する' : 'アップロードを開始する'}
             </Button>
           </div>

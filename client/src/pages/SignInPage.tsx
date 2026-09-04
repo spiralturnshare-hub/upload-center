@@ -108,9 +108,9 @@ export default function SignInPage() {
         <div className="flex flex-col items-center py-4">
           <div
             className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3"
-            style={{ backgroundColor: '#FCE4F4' }}
+            style={{ backgroundColor: '#DBEAFE' }}
           >
-            <Mail className="w-8 h-8" style={{ color: '#D62598' }} />
+            <Mail className="w-8 h-8" style={{ color: '#2563EB' }} />
           </div>
           {step === 'email' ? (
             <>
@@ -145,7 +145,7 @@ export default function SignInPage() {
                   placeholder="例）taro-suzuki@example.com"
                   className="w-full h-12 pl-10 pr-4 rounded-xl border-2 text-sm bg-white focus:outline-none transition-all"
                   style={{ borderColor: fieldError ? ERROR_BORDER : '#E5E7EB', backgroundColor: fieldError ? ERROR_BG : 'white' }}
-                  onFocus={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#D62598')}
+                  onFocus={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#2563EB')}
                   onBlur={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#E5E7EB')}
                 />
               </div>
@@ -178,7 +178,7 @@ export default function SignInPage() {
                 placeholder="123456"
                 className="w-full h-14 px-4 rounded-xl border-2 text-xl text-center font-mono tracking-widest bg-white focus:outline-none transition-all"
                 style={{ borderColor: fieldError ? ERROR_BORDER : '#E5E7EB', backgroundColor: fieldError ? ERROR_BG : 'white' }}
-                onFocus={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#D62598')}
+                onFocus={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#2563EB')}
                 onBlur={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#E5E7EB')}
                 autoFocus
               />
