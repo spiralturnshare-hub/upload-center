@@ -315,3 +315,14 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
   - 「修正内容を保存する」ボタンを上・中央・下の3箇所に(`renderSave`)。
 - ビルド OK。DB 変更なし。
   ⚠️ upsys バケットの storage SELECT ポリシー次第で署名付きURLが 403 になる可能性 → その場合はプレビューが出ないが差し替えは可能。要実機確認。
+
+## 2026-09-04: 写真/動画の差し替えを実際に機能させた(migration 028-030 + EditUploadPage 改修)
+
+- 症状: 「アップロードが完了した注文」→ 内容の確認・修正 で写真/動画の「差し替え」を押しても反映されない。
+- 判明: `replace_upload_file` RPC(003 由来)が 003 以来一度も動いていなかった。旧の汎用 catch がエラーを隠していた。
+  原因3つ: (1) 非 SECURITY DEFINER で顧客 RLS が関数内 DML に効き、uploads_files に UPDATE ポリシーが無く旧行退避が 0 行。
+  (2) `WHERE kind = p_kind` が enum=text で `[42883]`。(3) INSERT の `p_file_type`/`p_kind` が enum 列に代入キャストされず `[42804]`。
+- migration 028(SECDEF + 所有者/スタッフチェック + user_id を upload 行から継承)/ 029(`kind::text = p_kind`)/ 030(`::file_type` `::file_kind`)を Green に適用。実機で動画差し替え成功。
+- クライアント側(commit 350d160 ほか): 差し替え失敗時に実 PostgREST エラーを表示、`uploadFileToStorage` の返り値を path に統一。
+- EditUploadPage: メディアプレビュー(`getUploadFileUrl` で upsys 署名付きURL、`<img>`/`<video controls>`)、kind の日本語ラベル、差し替えボタンを各メディアヘッダーに、外周を濃い灰の枠、保存ボタン上中下3箇所、`canCustomerEditUpload` に design_done 追加。
+- 上書きなしで旧データ保持: `uploads_files.is_current=false` + `upload_revisions` 追記(顧客データ改訂ポリシー通り)。
