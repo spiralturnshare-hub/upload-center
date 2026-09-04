@@ -326,3 +326,21 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
 - クライアント側(commit 350d160 ほか): 差し替え失敗時に実 PostgREST エラーを表示、`uploadFileToStorage` の返り値を path に統一。
 - EditUploadPage: メディアプレビュー(`getUploadFileUrl` で upsys 署名付きURL、`<img>`/`<video controls>`)、kind の日本語ラベル、差し替えボタンを各メディアヘッダーに、外周を濃い灰の枠、保存ボタン上中下3箇所、`canCustomerEditUpload` に design_done 追加。
 - 上書きなしで旧データ保持: `uploads_files.is_current=false` + `upload_revisions` 追記(顧客データ改訂ポリシー通り)。
+
+## 2026-09-04: 完了カードに「修正日時 + 修正内容」の履歴を積み上げ表示
+
+- 冨永社長指示: 「アップロードが完了した注文」で完了日時の下に、その後の修正日時と修正内容
+  (例: スイング動画・足の画像)を記載。複数回修正したら修正ログが下に溜まっていく形に。
+- `OrderListPage`: 完了カードの日付ブロックに `upload_revisions` 由来の修正ログを古い順に追加。
+  各行「修正日時: 2026/09/04 16:10」+ その下に何を修正したか(スタッフ対応分は注記)。
+- `supabase.ts`: `fetchUploadRevisions(uploadIds)` を新設(upload_id 単位でまとめて取得・古い順)。
+  `DashboardCompleted.revisions` を追加し `fetchOrderDashboard` が完了分だけバッチで埋める。
+  ラベル: `snapshot.file_replaced` があれば写真/動画差し替え → 日本語 kind ラベル、
+  無ければ `update_upload_with_history` 由来 → `change_reason`(無指定なら「注文情報の修正」)。
+- `KIND_LABEL_JP`/`kindLabel` を `lib/kindLabels.ts` に切り出し、EditUploadPage と共有。
+- **要 Green 適用(未適用)**: `spiralturn-green-integration/supabase/migrations/031_upload_revisions_own_policy_fix.sql`。
+  007 で作った `upload_revisions_select_own`/`_insert_own` が `uploads.user_id = auth.uid()` という
+  壊れた条件のままだった(008 で uploads 本体は auth_user_id 間接参照へ直したが upload_revisions は
+  対象外だった)→ 顧客は自分の改訂履歴を1行も読めない状態。031 で is-own 判定を uploads 経由の
+  `public.users.auth_user_id = auth.uid()` に是正。適用するまで完了カードの修正ログは常に空(害はない)。
+- ビルド OK(`npx vite build` はリポジトリ直下から実行。`client/` 直下には vite.config が無く別ディレクトリにある点に注意)。
