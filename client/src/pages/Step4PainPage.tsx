@@ -5,6 +5,7 @@ import type { PainEntry } from '@/contexts/UploadContext';
 import AppLayout from '@/components/AppLayout';
 import type { AppLayoutHandle } from '@/components/AppLayout';
 import PinkButton from '@/components/PinkButton';
+import IncompleteNotice from '@/components/IncompleteNotice';
 import { toast } from 'sonner';
 
 // ============================================================
@@ -322,6 +323,13 @@ export default function Step4PainPage() {
       }
     >
       <div className="space-y-5">
+        <IncompleteNotice
+          show={hasPainError}
+          heading="次に進むには、あと 1 項目の選択が必要です。"
+          items={['痛み・違和感の有無']}
+          hint="下の「痛み・違和感はありますか？」で「ある」または「ない」を選択してください。"
+        />
+
         {/* Section header */}
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"

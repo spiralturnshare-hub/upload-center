@@ -132,3 +132,41 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
 - `client/src/lib/supabase.ts`: ハードコード fallback(旧 anon JWT)撤去 → env 必須(未設定なら throw)
 - Vercel env `VITE_SUPABASE_ANON_KEY` を `sb_publishable_...` に差し替え済み(Production ほか)
 - 巻き戻し: この commit を revert + Vercel env を旧 anon JWT に戻す
+
+---
+
+## 2026-09-04: STEP1/STEP2 の (1) 保存パス不整合バグ修正 (2) 「次へ」ブロック時の具体的な案内
+
+- 変更前 HEAD: `4a2868e` / Vercel Production: https://upload-center-murex.vercel.app
+- 対象: `client/src/pages/Step1VideoPage.tsx` / `client/src/pages/Step2PhotoPage.tsx`。他ファイル・Green スキーマ変更なし。ビルド OK(`vite build` 成功。`tsc` の `Home.tsx` streamdown エラーは既存・無関係)
+
+### (1) 保存パス不整合の修正(実害バグ)
+- `uploadFileToStorage` は Storage に `{fileId}.{ext}` という名前で保存し、実パスを `path` で返す。
+- ところが Step1/Step2 は返り値を使わず、`uploads_files.url` を **元ファイル名**(`file.name`、例 `IMG_6836.mov`)で手組みしていた → DB の `url` と Storage の実体名が食い違い。
+- 実測(2026-09-04 冨永社長のテストデータ): `uploads_files.url` = `…/{fileId}/IMG_6836.mov` / `storage.objects.name` = `…/{fileId}/{fileId}.mov`。
+- 後工程(計測・動作分析・動画確認)が `uploads_files.url` で Storage を引くと 404 になる。
+- 修正: 3箇所(Step1 動画 / Step2 足写真 / Step2 靴写真)を `const { path } = await uploadFileToStorage(...)` にして `url: path` を保存。フォーマット(相対パス)は現状維持、ファイル名だけ実体と一致させる = 影響最小。
+- ⚠️ 既存の食い違い行(冨永社長のテスト分・`upload_id` `150ab754…` `d4685bda…` `fd739cc0…`)は手修正が必要(`uploads_files.url` の末尾を実 `storage.objects.name` に合わせる UPDATE)。テストデータのみなので次の rollback 対象と一緒に消してもよい。
+- ※ `EditUploadPage.tsx` は元から返り値の `url`(getPublicUrl のフル URL)を使っている = Step1/2 と形式が違う(相対パス vs フル URL)。この不整合は既存。downstream がどちらを期待するか要確認(別タスク)。
+
+### (2) 「次へ」が進まないときの案内(冨永社長指摘・2026-09-04)
+- 旧: `!canProceed` で `toast.error('全ての動画をアップロードしてください')` のみ。何が足りないか不明・トーストは3秒で消える → 顧客がストレスで離脱。
+- 新(Step1VideoPage):
+  - 「次へ」を押して進めなかったら、カード群の上に**消えない警告ボックス**(琥珀色)を表示。「あと N 本」+ **不足している動画の名称リスト**(`VIDEO_KIND_LABELS[k].title`)+ 「下の該当カードでファイルを選ぶと開始します」。
+  - 不足している必須カードは**枠を琥珀色で強調** + アイコンを警告に + 「この動画が未アップロードです」。
+  - 状況別トースト: インソール種別未選択 / アップロード中(完了待ち) / 未アップロード(名称列挙)。
+  - `triedNext` state で「一度押した後」だけ強調(初回表示から赤くしない)。全部揃えば警告は自動で消える。
+- 巻き戻し: この commit を revert(DB 変更なしなので revert だけで戻る)
+
+### (3) 「次へ」案内の横展開 STEP2〜STEP7(2026-09-04 冨永社長「横展開して」)
+- 新規 `client/src/components/IncompleteNotice.tsx` = 共通バナー(琥珀色・消えない・不足項目を箇条書き)。
+- 適用:
+  - **Step2(写真)**: 不足を「足の写真」「靴の写真（<インソール名>）」で列挙。インソール未選択時の案内も。
+  - **Step3(靴情報)**: 「靴のブランド（<名>）」「靴の表記サイズ（<名>）」「靴のフィット感（<名>）」「ルームシューズの色」を列挙。既存の赤字インライン表示は維持。入力開始でバナーは一旦消える。
+  - **Step4(痛み)**: 単一項目だが一貫性のためバナー表示(「痛み・違和感の有無」)。
+  - **Step5(目的)**: 「作製目的・重視する項目の選択」「プレイスタイルの選択」を列挙。
+  - **Step7(配送先)**: 「インソール利用者のお名前/フリガナ」「配送先のお名前/電話番号/郵便番号」を列挙。フリガナ形式エラーも文言分岐。
+  - いずれもトーストのメッセージも `未入力の項目があります:〇〇・〇〇` と具体名入りに変更。
+- **対象外**: Step1 は既に個別実装済み(見た目は共通バナーと同一)。Step6(タコ)は必須項目なしでブロックなし。Step8 は「送信」で別処理。
+- ビルド OK(`tsc` は既存の Home.tsx/streamdown エラーのみ、`vite build` 成功)。
+- 巻き戻し: この commit を revert(DB 変更なし)

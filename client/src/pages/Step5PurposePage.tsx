@@ -3,6 +3,7 @@ import { useUpload } from '@/contexts/UploadContext';
 import AppLayout from '@/components/AppLayout';
 import type { AppLayoutHandle } from '@/components/AppLayout';
 import PinkButton from '@/components/PinkButton';
+import IncompleteNotice from '@/components/IncompleteNotice';
 import { getRequiredQuestionTypes } from '@/lib/insoleConfig';
 import { toast } from 'sonner';
 
@@ -128,6 +129,8 @@ export default function Step5PurposePage() {
   const { selectedInsoles, purposeInfo } = uploadData;
   const layoutRef = useRef<AppLayoutHandle>(null);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
+  // 「次へ」を押して進めなかったときに未入力項目を具体名で残す
+  const [missingItems, setMissingItems] = useState<string[]>([]);
 
   const requiredQuestionTypes = getRequiredQuestionTypes(selectedInsoles);
   const hasDaily = requiredQuestionTypes.includes('daily');
@@ -138,6 +141,7 @@ export default function Step5PurposePage() {
 
   const update = (data: Partial<typeof purposeInfo>) => {
     updateUploadData({ purposeInfo: { ...purposeInfo, ...data } });
+    if (missingItems.length > 0) setMissingItems([]); // 入力し始めたら案内バナーを消す(次へで再判定)
     // 入力されたらエラーをクリア
     if (data.purposes !== undefined && data.purposes.length > 0) setErrors(prev => ({ ...prev, purposes: false }));
     if (data.playstyle !== undefined && data.playstyle !== '') setErrors(prev => ({ ...prev, playstyle: false }));
@@ -153,16 +157,25 @@ export default function Step5PurposePage() {
 
   const handleNext = () => {
     layoutRef.current?.scrollToTop();
+    if (selectedInsoles.length === 0) {
+      setMissingItems([]);
+      toast.error('先にホーム画面でインソールの種類を選択してください');
+      return;
+    }
     if (!canProceed) {
       const newErrors: Record<string, boolean> = {};
+      const missing: string[] = [];
       if ((hasGolf || hasNormal || hasSports || hasBeauty) && purposeInfo.purposes.length === 0) {
         newErrors.purposes = true;
+        missing.push('作製目的・重視する項目の選択');
       }
       if (hasSports && purposeInfo.playstyle === '') {
         newErrors.playstyle = true;
+        missing.push('プレイスタイルの選択');
       }
       setErrors(newErrors);
-      toast.error('未入力の項目があります');
+      setMissingItems(missing);
+      toast.error(`未入力の項目があります:${missing.join('・')}`);
       return;
     }
     setCurrentPage('step6');
@@ -184,6 +197,13 @@ export default function Step5PurposePage() {
       }
     >
       <div className="space-y-5">
+        <IncompleteNotice
+          show={missingItems.length > 0}
+          heading={`次に進むには、あと ${missingItems.length} 項目の選択が必要です。`}
+          items={missingItems}
+          hint="下の該当項目を選択してください（赤く表示されています）。"
+        />
+
         <div>
           <div className="flex items-center gap-2 mb-1">
             <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#D62598' }}>5</div>

@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import type { AppLayoutHandle } from '@/components/AppLayout';
 import PinkButton from '@/components/PinkButton';
 import UploadZone from '@/components/UploadZone';
+import IncompleteNotice from '@/components/IncompleteNotice';
 import { getRequiredImageTypes, INSOLE_DISPLAY_NAMES } from '@/lib/insoleConfig';
 import { toast } from 'sonner';
 import { uploadFileToStorage, insertUploadFile, supabase, fetchCurrentUploadFiles } from '@/lib/supabase';
@@ -52,14 +53,15 @@ export default function Step2PhotoPage() {
     try {
       for (const file of files) {
         const fileId = crypto.randomUUID();
-        await uploadFileToStorage(file, uploadId, 'foot', fileId, userId);
+        // path = 実際の保存パス({fileId}.{ext})。file.name で組み立てると実体名と食い違い後工程で 404。2026-09-04 修正
+        const { path } = await uploadFileToStorage(file, uploadId, 'foot', fileId, userId);
         await insertUploadFile({
           upload_id: uploadId,
           order_id: orderId || null,
           user_id: userId,
           file_type: 'image',
           kind: 'foot',
-          url: `${userId ?? 'guest'}/live/${uploadId}/foot/${fileId}/${file.name}`,
+          url: path,
         });
       }
       clearInterval(fakeInterval);
@@ -87,7 +89,8 @@ export default function Step2PhotoPage() {
     try {
       for (const file of files) {
         const fileId = crypto.randomUUID();
-        await uploadFileToStorage(file, uploadId, 'shoe', fileId, userId);
+        // path = 実際の保存パス({fileId}.{ext})。file.name で組み立てると実体名と食い違い後工程で 404。2026-09-04 修正
+        const { path } = await uploadFileToStorage(file, uploadId, 'shoe', fileId, userId);
         await insertUploadFile({
           upload_id: uploadId,
           order_id: orderId || null,
@@ -96,7 +99,7 @@ export default function Step2PhotoPage() {
           // どのインソール用の靴かは insole_sku 列に持たせる(uploads_files.insole_sku)。
           kind: 'shoes',
           insole_sku: insoleKind,
-          url: `${userId ?? 'guest'}/live/${uploadId}/shoe/${fileId}/${file.name}`,
+          url: path,
         });
       }
       clearInterval(fakeInterval);
@@ -216,10 +219,36 @@ export default function Step2PhotoPage() {
   );
   const canProceed = footDone && shoeDone;
 
+  // 「次へ」を押して進めなかったことがあるか
+  const [triedNext, setTriedNext] = useState(false);
+
+  // まだアップロードされていない写真を具体名で(足 / 靴＜インソール名＞)
+  const missingPhotoItems = [
+    ...(footDone ? [] : ['足の写真']),
+    ...(needsShoePhoto
+      ? shoePhotoInsoles
+          .filter(
+            k =>
+              !(
+                shoePhotosUploaded[k] ||
+                shoeStatus[k] === 'success' ||
+                (shoePhotoFiles[k]?.length ?? 0) > 0
+              )
+          )
+          .map(k => `靴の写真（${INSOLE_DISPLAY_NAMES[k] ?? k}）`)
+      : []),
+  ];
+
   const handleNext = () => {
     layoutRef.current?.scrollToTop();
+    if (selectedInsoles.length === 0) {
+      setTriedNext(true);
+      toast.error('先にホーム画面でインソールの種類を選択してください');
+      return;
+    }
     if (!canProceed) {
-      toast.error('全ての画像をアップロードしてください');
+      setTriedNext(true);
+      toast.error(`次の写真がまだアップロードされていません:${missingPhotoItems.join('・')}`);
       return;
     }
     setCurrentPage('step3');
@@ -245,6 +274,17 @@ export default function Step2PhotoPage() {
       }
     >
       <div className="space-y-5">
+        <IncompleteNotice
+          show={triedNext && !canProceed}
+          heading={
+            selectedInsoles.length === 0
+              ? 'まだ次に進めません。先にホーム画面で「インソールの種類」を選択してください。'
+              : `次に進むには、あと ${missingPhotoItems.length} 件の写真をアップロードしてください。`
+          }
+          items={selectedInsoles.length === 0 ? [] : missingPhotoItems}
+          hint="下の該当エリアで写真を選ぶ（または「かんたん撮影アプリ」で撮影する）とアップロードされます。"
+        />
+
         {/* Section header */}
         <div>
           <div className="flex items-center gap-2 mb-1">

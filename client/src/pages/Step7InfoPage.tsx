@@ -3,6 +3,7 @@ import { useUpload } from '@/contexts/UploadContext';
 import AppLayout from '@/components/AppLayout';
 import type { AppLayoutHandle } from '@/components/AppLayout';
 import PinkButton from '@/components/PinkButton';
+import IncompleteNotice from '@/components/IncompleteNotice';
 import { toast } from 'sonner';
 import { UserCircle, MapPin, AlertCircle } from 'lucide-react';
 
@@ -90,6 +91,8 @@ export default function Step7InfoPage() {
 
   // エラー状態
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
+  // 「次へ」を押して進めなかったときに未入力項目を具体名で残す
+  const [missingItems, setMissingItems] = useState<string[]>([]);
 
   // 配送先選択: 'account' | 'other'
   const [shipMode, setShipMode] = useState<'account' | 'other'>('account');
@@ -112,7 +115,10 @@ export default function Step7InfoPage() {
     overseasAddress: '',
   });
 
-  const updateAlt = (data: Partial<typeof altForm>) => setAltForm(prev => ({ ...prev, ...data }));
+  const updateAlt = (data: Partial<typeof altForm>) => {
+    setAltForm(prev => ({ ...prev, ...data }));
+    if (missingItems.length > 0) setMissingItems([]); // 入力し始めたら案内バナーを消す(次へで再判定)
+  };
 
   // アカウント住所を選択したとき、customerInfoに反映
   useEffect(() => {
@@ -163,29 +169,34 @@ export default function Step7InfoPage() {
   const handleNext = () => {
     layoutRef.current?.scrollToTop();
     const newErrors: Record<string, boolean> = {};
+    const missing: string[] = [];
     let hasError = false;
 
     if (!customerInfo.userName) {
       newErrors.userName = true;
       hasError = true;
+      missing.push('インソール利用者のお名前');
     }
     if (!customerInfo.userKana) {
       newErrors.userKana = true;
       hasError = true;
+      missing.push('インソール利用者のフリガナ');
     } else if (!KATAKANA_REGEX.test(customerInfo.userKana)) {
       newErrors.userKana = true;
       hasError = true;
+      missing.push('フリガナ（カタカナで入力してください）');
     }
     if (shipMode === 'other' || !isLoggedIn || !isProfileRegistered) {
-      if (!altForm.shipName) { newErrors.shipName = true; hasError = true; }
-      if (!altForm.phone) { newErrors.phone = true; hasError = true; }
-      if (!altForm.isOverseas && !altForm.postalCode) { newErrors.postalCode = true; hasError = true; }
+      if (!altForm.shipName) { newErrors.shipName = true; hasError = true; missing.push('配送先のお名前'); }
+      if (!altForm.phone) { newErrors.phone = true; hasError = true; missing.push('配送先の電話番号'); }
+      if (!altForm.isOverseas && !altForm.postalCode) { newErrors.postalCode = true; hasError = true; missing.push('配送先の郵便番号'); }
     }
 
     setFieldErrors(newErrors);
+    setMissingItems(missing);
 
     if (hasError) {
-      toast.error('未入力の項目があります');
+      toast.error(`未入力の項目があります:${missing.join('・')}`);
       return;
     }
 
@@ -236,6 +247,13 @@ export default function Step7InfoPage() {
       }
     >
       <div className="space-y-5">
+        <IncompleteNotice
+          show={missingItems.length > 0}
+          heading={`次に進むには、あと ${missingItems.length} 項目の入力が必要です。`}
+          items={missingItems}
+          hint="下の該当項目を入力してください（赤く表示されています）。"
+        />
+
         {/* Step header */}
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -252,7 +270,7 @@ export default function Step7InfoPage() {
             <input
               type="text"
               value={customerInfo.userName}
-              onChange={e => { updateUploadData({ customerInfo: { ...customerInfo, userName: e.target.value } }); if (fieldErrors.userName) setFieldErrors(p => ({ ...p, userName: false })); }}
+              onChange={e => { updateUploadData({ customerInfo: { ...customerInfo, userName: e.target.value } }); if (fieldErrors.userName) setFieldErrors(p => ({ ...p, userName: false })); if (missingItems.length > 0) setMissingItems([]); }}
               placeholder="例）鈴木 太郎"
               className="w-full h-11 px-3 rounded-xl border-2 text-sm focus:outline-none transition-colors"
               style={{ borderColor: fieldErrors.userName ? ERROR_BORDER : '#E5E7EB', backgroundColor: fieldErrors.userName ? ERROR_BG : 'white' }}
@@ -265,7 +283,7 @@ export default function Step7InfoPage() {
             <input
               type="text"
               value={customerInfo.userKana}
-              onChange={e => { updateUploadData({ customerInfo: { ...customerInfo, userKana: e.target.value } }); if (fieldErrors.userKana) setFieldErrors(p => ({ ...p, userKana: false })); }}
+              onChange={e => { updateUploadData({ customerInfo: { ...customerInfo, userKana: e.target.value } }); if (fieldErrors.userKana) setFieldErrors(p => ({ ...p, userKana: false })); if (missingItems.length > 0) setMissingItems([]); }}
               placeholder="例）スズキ タロウ"
               className="w-full h-11 px-3 rounded-xl border-2 text-sm focus:outline-none transition-colors"
               style={{ borderColor: fieldErrors.userKana ? ERROR_BORDER : '#E5E7EB', backgroundColor: fieldErrors.userKana ? ERROR_BG : 'white' }}

@@ -3,6 +3,7 @@ import { useUpload } from '@/contexts/UploadContext';
 import AppLayout from '@/components/AppLayout';
 import type { AppLayoutHandle } from '@/components/AppLayout';
 import PinkButton from '@/components/PinkButton';
+import IncompleteNotice from '@/components/IncompleteNotice';
 import { INSOLE_DISPLAY_NAMES, ROOM_SHOE_COLORS } from '@/lib/insoleConfig';
 import type { ShoeInfo } from '@/contexts/UploadContext';
 import { toast } from 'sonner';
@@ -254,9 +255,12 @@ export default function Step3ShoesPage() {
   // エラー状態管理
   const [shoeErrors, setShoeErrors] = useState<Record<string, { brand?: boolean; size?: boolean; fit?: boolean }>>({});
   const [roomError, setRoomError] = useState(false);
+  // 「次へ」を押して進めなかったときに、未入力の項目を具体名で画面に残す
+  const [missingItems, setMissingItems] = useState<string[]>([]);
 
   const handleShoeInfoChange = (kind: string, info: ShoeInfo) => {
     updateUploadData({ shoeInfos: { ...shoeInfos, [kind]: info } });
+    if (missingItems.length > 0) setMissingItems([]); // 入力し始めたら案内バナーを一旦消す(次へでまた再判定)
     // 入力されたらエラーをクリア
     if (shoeErrors[kind]) {
       setShoeErrors(prev => ({
@@ -273,6 +277,7 @@ export default function Step3ShoesPage() {
   const handleRoomColorChange = (color: string) => {
     updateUploadData({ roomColor: color });
     if (roomError) setRoomError(false);
+    if (missingItems.length > 0) setMissingItems([]);
   };
 
   const handleNext = () => {
@@ -280,27 +285,31 @@ export default function Step3ShoesPage() {
 
     let hasError = false;
     const newShoeErrors: Record<string, { brand?: boolean; size?: boolean }> = {};
+    const missing: string[] = [];
 
     selectedInsoles.forEach(kind => {
       if (kind === 'room') {
         if (!roomColor) {
           setRoomError(true);
           hasError = true;
+          missing.push('ルームシューズの色');
         }
       } else {
+        const label = INSOLE_DISPLAY_NAMES[kind] ?? kind;
         const info = shoeInfos[kind] ?? defaultShoeInfoLocal;
         const errs: { brand?: boolean; size?: boolean; fit?: boolean } = {};
-        if (!info.brand) { errs.brand = true; hasError = true; }
-        if (!info.size) { errs.size = true; hasError = true; }
-        if (!info.fit) { errs.fit = true; hasError = true; }
+        if (!info.brand) { errs.brand = true; hasError = true; missing.push(`靴のブランド（${label}）`); }
+        if (!info.size) { errs.size = true; hasError = true; missing.push(`靴の表記サイズ（${label}）`); }
+        if (!info.fit) { errs.fit = true; hasError = true; missing.push(`靴のフィット感（${label}）`); }
         if (Object.keys(errs).length > 0) newShoeErrors[kind] = errs;
       }
     });
 
     setShoeErrors(newShoeErrors);
+    setMissingItems(missing);
 
     if (hasError) {
-      toast.error('未入力の項目があります');
+      toast.error(`未入力の項目があります:${missing.join('・')}`);
       return;
     }
 
@@ -327,6 +336,13 @@ export default function Step3ShoesPage() {
       }
     >
       <div className="space-y-5">
+        <IncompleteNotice
+          show={missingItems.length > 0}
+          heading={`次に進むには、あと ${missingItems.length} 項目の入力が必要です。`}
+          items={missingItems}
+          hint="下の該当項目を入力してください（赤く表示されています）。"
+        />
+
         {/* Section header */}
         <div>
           <div className="flex items-center gap-2 mb-1">
