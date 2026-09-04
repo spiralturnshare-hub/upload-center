@@ -200,3 +200,16 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
 - 再開時の Step3〜7(靴情報/痛み/目的/配送先)への JSON 復元の見え方。
 - テスト用に E2E モック注文3件を冨永社長のサインインメールに紐付け済み(`ST-E2E-0001`=完了 / `EM-E2E-0001`=中断 / `NEEDS-E2E-0001`=必要)。`e2e_mock_customer_rollback.sql` で撤去可。
 - 巻き戻し: この commit を revert(DB スキーマ変更なし。テスト注文は上記 rollback)
+
+---
+
+## 2026-09-04: HomePage 整理(ヒーローバナー/インソール種別選択を削除・決済起点に統一)
+
+- commit `54bf2b1`(変更前 HEAD `ec7178b`)/ 本番 https://upload-center-murex.vercel.app
+- 冨永社長指示: トップの「データアップロード」ピンクヒーローバナー(+「アップロードを開始」ボタン)と「インソール種別の選択」パネルを HomePage から削除。
+  - 理由: このシステムはアップロード = 決済に紐付いた注文が前提。決済に紐付かないアップロードは「ゲストアップロード」に集約。
+  - インソール種別選択の UI(`InsoleSelector`)は既に `GuestUploadPage` の `insole-select` ステップに実装済み(移設は不要、HomePage から消すだけ)。
+- 新しいトップの並び: アカウント → アップロードが必要な注文 → 中断した注文 → 完了した注文 → クイックアクション(決済完了IDでアップロード / ゲストアップロード) → 注意書き。
+- ログインしていない場合は「注文一覧」セクション非表示 → アカウント(サインイン誘導) → クイックアクション → 注意書き。
+- 未使用化した import/handler/state を除去(`InsoleSelector`/`PreShootingDialog`/`handleStartUpload`/`handlePreShootingConfirm`/`handleConfirmInsoleAndStart`/`handleInsoleChange`/`showInsoleSelector`/`showPreShootingDialog`)。
+- ビルド OK。DB 変更なし。巻き戻し = revert `54bf2b1`。
