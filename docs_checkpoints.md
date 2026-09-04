@@ -295,3 +295,12 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
 - **例外復元**: Step3 ルームシューズの色選択の `pink` スウォッチは実際のピンクに戻す(#DB4C97 / bg #FCE4F4)。テーマではなく商品の色名のため。
 - token 名 `--color-pink-brand`・component 名 `PinkButton`・const `PINK` は据え置き(値はブルー、コメントで明記)。将来リネームは別タスク。
 - ビルド OK。DB 変更なし。
+
+## 2026-09-04: 注文一覧の各カードに日時を表示(冨永社長ルール化)
+
+- ルール: アップロード関連の一覧・カードには日時を必ず出す。→ Bacon_Brain/20_技術・システム/顧客データ改訂ポリシー.md 2026-09-04追記。
+- `fetchOrderDashboard`: `uploads.created_at`(開始)/ `uploads.updated_at`(中断・完了)を取得し
+  `DashboardInProgress.{uploadStartedAt,interruptedAt}` / `DashboardCompleted.{uploadStartedAt,completedAt}` を追加。
+- `OrderListPage`: `DateRows` コンポーネント + `fmtDT`(2026/09/04 15:30 形式)を新設。
+  新規=注文日 / 中断=アップロード開始・中断日時 / 完了=アップロード開始・完了日時 を各カードに表示。
+- ビルド OK。DB 変更なし。

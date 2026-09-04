@@ -524,18 +524,24 @@ export interface DashboardOrder {
   orderId: string | null;       // 実注文ID。注文に紐付かないアップロードは null
   orderName: string | null;
   status: string | null;
-  createdAt: string | null;
+  createdAt: string | null;     // 注文日(orders.created_at)。needing カードで「注文日」として表示
   insoleKinds: string[];        // ['walk','room'] 等。表示は「歩き用・ルーム用のアップロードが必要です」
   roomShoes: boolean;
   isGuest: boolean;             // ゲストアップロード(uploads.guest_tf)
 }
+// ※ アップロード関連の一覧は必ず日付を表示する(冨永社長ルール・2026-09-04。
+//    Bacon_Brain/20_技術・システム/顧客データ改訂ポリシー.md 参照)。
 export interface DashboardInProgress extends DashboardOrder {
   uploadId: string;
   uploadedKinds: string[];      // これまでにアップロード済みのファイル種別(進捗表示用)
+  uploadStartedAt: string | null;   // アップロード開始日時(uploads.created_at)
+  interruptedAt: string | null;     // 中断日時 ≒ 最後に操作した日時(uploads.updated_at)
 }
 export interface DashboardCompleted extends DashboardOrder {
   uploadId: string;
   uploadStatus: string | null;
+  uploadStartedAt: string | null;   // アップロード開始日時(uploads.created_at)
+  completedAt: string | null;       // 完了日時 ≒ 提出時の更新日時(uploads.updated_at)
 }
 export interface OrderDashboard {
   needing: DashboardOrder[];
@@ -584,9 +590,9 @@ export async function fetchOrderDashboard(): Promise<OrderDashboard> {
     const orderIds = list.map(o => o.id);
     const { data: ups } = await supabase
       .from('uploads')
-      .select('id, order_id, status, guest_tf, updated_at')
+      .select('id, order_id, status, guest_tf, created_at, updated_at')
       .in('order_id', orderIds);
-    const upByOrder = new Map<string, { id: string; status: string | null; guest_tf: boolean | null }[]>();
+    const upByOrder = new Map<string, { id: string; status: string | null; guest_tf: boolean | null; created_at: string | null; updated_at: string | null }[]>();
     (ups ?? []).forEach(u => {
       if (!u.order_id) return;
       const arr = upByOrder.get(u.order_id) ?? [];
@@ -610,9 +616,15 @@ export async function fetchOrderDashboard(): Promise<OrderDashboard> {
       const done = us.find(u => u.status === 'submitted' || u.status === 'done');
       const draft = us.find(u => u.status === 'draft');
       if (done) {
-        out.completed.push({ ...base, uploadId: done.id, uploadStatus: done.status });
+        out.completed.push({
+          ...base, uploadId: done.id, uploadStatus: done.status,
+          uploadStartedAt: done.created_at, completedAt: done.updated_at,
+        });
       } else if (draft) {
-        out.inProgress.push({ ...base, uploadId: draft.id, uploadedKinds: Array.from(kindsByUpload.get(draft.id) ?? []) });
+        out.inProgress.push({
+          ...base, uploadId: draft.id, uploadedKinds: Array.from(kindsByUpload.get(draft.id) ?? []),
+          uploadStartedAt: draft.created_at, interruptedAt: draft.updated_at,
+        });
       } else {
         out.needing.push(base);
       }
@@ -623,7 +635,7 @@ export async function fetchOrderDashboard(): Promise<OrderDashboard> {
   if (myCustomerId) {
     const { data: orphans } = await supabase
       .from('uploads')
-      .select('id, order_name, selected_insoles, status, guest_tf, created_at')
+      .select('id, order_name, selected_insoles, status, guest_tf, created_at, updated_at')
       .eq('user_id', myCustomerId)
       .is('order_id', null)
       .order('created_at', { ascending: false });
@@ -641,9 +653,15 @@ export async function fetchOrderDashboard(): Promise<OrderDashboard> {
         isGuest: Boolean(u.guest_tf),
       };
       if (u.status === 'submitted' || u.status === 'done') {
-        out.completed.push({ ...base, uploadId: u.id, uploadStatus: u.status });
+        out.completed.push({
+          ...base, uploadId: u.id, uploadStatus: u.status,
+          uploadStartedAt: u.created_at, completedAt: u.updated_at,
+        });
       } else if (u.status === 'draft') {
-        out.inProgress.push({ ...base, uploadId: u.id, uploadedKinds: Array.from(kindsByUpload.get(u.id) ?? []) });
+        out.inProgress.push({
+          ...base, uploadId: u.id, uploadedKinds: Array.from(kindsByUpload.get(u.id) ?? []),
+          uploadStartedAt: u.created_at, interruptedAt: u.updated_at,
+        });
       }
       // 注文なしの needing は概念上あり得ない(注文が無いのに「必要」とは言えない)ので無視
     }

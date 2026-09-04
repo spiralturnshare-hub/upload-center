@@ -49,6 +49,30 @@ function insoleLabel(kinds: string[]): string {
   return kinds.map(k => INSOLE_DISPLAY_NAMES[k as InsoleKind] ?? k).join('・');
 }
 
+// 日時を「2026/09/04 15:30」形式で(不明なら「—」)
+function fmtDT(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleString('ja-JP', {
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  });
+}
+
+// 注文カード内の日付ブロック(アップロード関連の一覧は必ず日付を出す・冨永社長ルール 2026-09-04)
+function DateRows({ rows }: { rows: { label: string; value: string | null | undefined }[] }) {
+  return (
+    <div className="rounded-lg bg-gray-50 px-3 py-2 text-[11px] text-gray-500 space-y-0.5">
+      {rows.map((r, i) => (
+        <div key={i} className="flex items-center justify-between gap-2">
+          <span>{r.label}</span>
+          <span className="font-medium text-gray-700 tabular-nums">{fmtDT(r.value)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function OrderListPage() {
   const {
     orderListMode, setCurrentPage,
@@ -199,6 +223,7 @@ export default function OrderListPage() {
                 )}
                 {newRows.map((o) => (
                   <OrderRow key={o.id} o={o}>
+                    <DateRows rows={[{ label: '注文日', value: o.createdAt }]} />
                     <p className="text-sm text-gray-700">
                       <span className="font-semibold" style={{ color: PINK }}>{insoleLabel(o.insoleKinds)}</span>
                       {' '}のアップロードが必要です。
@@ -223,6 +248,10 @@ export default function OrderListPage() {
                 )}
                 {resumeRows.map((o) => (
                   <OrderRow key={o.id} o={o}>
+                    <DateRows rows={[
+                      { label: 'アップロード開始', value: o.uploadStartedAt },
+                      { label: '中断日時', value: o.interruptedAt },
+                    ]} />
                     <p className="text-sm text-gray-700">
                       アップロード途中です（{o.uploadedKinds.length} 件のデータを保存済み）。続きから再開できます。
                     </p>
@@ -238,6 +267,10 @@ export default function OrderListPage() {
             {/* 完了した注文 */}
             {showCompleted && completedRows.map((o) => (
               <OrderRow key={o.id} o={o}>
+                <DateRows rows={[
+                  { label: 'アップロード開始', value: o.uploadStartedAt },
+                  { label: '完了日時', value: o.completedAt },
+                ]} />
                 <PinkButton size="md" variant="outline" className="w-full" onClick={() => openEdit(o)}>
                   <CheckCircle2 className="w-4 h-4" />
                   アップロード内容の確認・修正
