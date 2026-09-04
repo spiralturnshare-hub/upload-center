@@ -355,8 +355,8 @@ export default function EditUploadPage() {
                 const isVideo = f.file_type === 'video';
                 const replacing = replacingKind === f.kind;
                 return (
-                  <div key={f.id} className="rounded-xl border border-gray-100 overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-2 bg-gray-50">
+                  <div key={f.id} className="rounded-xl border-2 overflow-hidden" style={{ borderColor: '#6B7280' }}>
+                    <div className="flex items-center justify-between px-3 py-2 bg-gray-100">
                       <span className="text-xs font-bold text-gray-700">{kindLabel(f.kind)}</span>
                       {editable ? (
                         <label
