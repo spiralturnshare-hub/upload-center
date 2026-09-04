@@ -22,6 +22,7 @@ import {
   fetchUploadById,
   canCustomerEditUpload,
   fetchCurrentUploadFiles,
+  getUploadFileUrl,
   updateUploadAsCustomer,
   replaceUploadFileAsCustomer,
   uploadFileToStorage,
@@ -30,6 +31,21 @@ import {
 
 const PINK = '#2563EB';
 const inputClass = 'w-full h-11 px-3 rounded-xl border-2 border-gray-200 text-sm focus:outline-none transition-colors';
+
+// uploads_files.kind → 顧客に見せる日本語ラベル(英語では出さない・冨永社長 2026-09-04)
+const KIND_LABEL_JP: Record<string, string> = {
+  walk: '歩きの動画',
+  oneleg: '片足立ち動画',
+  sidejump: 'サイドジャンプ動画',
+  running: 'ランニング動画',
+  swing: 'スイングの動画',
+  foot: '足の写真',
+  shoes: '靴の写真',
+  pain_photo: '痛み・違和感の写真',
+  tako_photo: 'タコ・魚の目の写真',
+  other: 'その他のデータ',
+};
+const kindLabel = (kind: string | null) => (kind ? KIND_LABEL_JP[kind] ?? kind : 'データ');
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -47,6 +63,7 @@ export default function EditUploadPage() {
   const [upload, setUpload] = useState<UploadFullRecord | null>(null);
   const [editable, setEditable] = useState(true);
   const [files, setFiles] = useState<{ id: string; kind: string | null; file_type: string | null; url: string | null }[]>([]);
+  const [fileUrls, setFileUrls] = useState<Record<string, string | null>>({}); // file.id → 表示用URL
   const [saving, setSaving] = useState(false);
   const [replacingKind, setReplacingKind] = useState<string | null>(null);
 
@@ -84,6 +101,9 @@ export default function EditUploadPage() {
       setUpload(rec);
       setEditable(canEdit);
       setFiles(fileList);
+      // 各ファイルの表示用URL(署名付き)を解決
+      Promise.all(fileList.map(f => getUploadFileUrl(f.url).then(u => [f.id, u] as const)))
+        .then(pairs => { if (!cancelled) setFileUrls(Object.fromEntries(pairs)); });
       setInsoleUserName(rec.insole_user_name ?? '');
       setInsoleUserKana(rec.insole_user_kana ?? '');
       setCustomerInfo(rec.customer_info ?? {});
@@ -153,6 +173,8 @@ export default function EditUploadPage() {
       });
       const fileList = await fetchCurrentUploadFiles(upload.id);
       setFiles(fileList);
+      const pairs = await Promise.all(fileList.map(f => getUploadFileUrl(f.url).then(u => [f.id, u] as const)));
+      setFileUrls(Object.fromEntries(pairs));
       toast.success('ファイルを差し替えました');
     } catch (e) {
       toast.error('ファイルの差し替えに失敗しました');
@@ -160,6 +182,15 @@ export default function EditUploadPage() {
       setReplacingKind(null);
     }
   }
+
+  // 「修正内容を保存する」ボタン(上・中・下の3箇所で使う。冨永社長 2026-09-04)
+  const renderSave = (key: string) =>
+    editable ? (
+      <PinkButton key={key} fullWidth size="lg" onClick={handleSave} disabled={saving}>
+        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+        修正内容を保存する
+      </PinkButton>
+    ) : null;
 
   if (loading) {
     return (
@@ -200,11 +231,14 @@ export default function EditUploadPage() {
           <div className="flex items-start gap-2 text-sm bg-orange-50 text-orange-700 rounded-xl p-4">
             <Lock className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <p>
-              作製がすでに開始されているため、このページからの修正はできません。
-              内容の変更が必要な場合は、サポートまでご連絡ください。
+              すでに作製(計測・動作分析・設計)が始まっています。データの差し替え・修正はできません。
+              内容の変更が必要な場合はサポートまでご連絡ください。
             </p>
           </div>
         )}
+
+        {/* 保存ボタン(上) */}
+        {renderSave('top')}
 
         {/* 顧客情報 */}
         <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
@@ -259,6 +293,9 @@ export default function EditUploadPage() {
           </Field>
         </div>
 
+        {/* 保存ボタン(中央) */}
+        {renderSave('mid')}
+
         {/* 靴情報(選択中のインソール種別ごと) */}
         {(upload.selected_insoles ?? []).map((insoleKind) => (
           <div key={insoleKind} className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
@@ -306,42 +343,70 @@ export default function EditUploadPage() {
           </Field>
         </div>
 
-        {/* 写真・動画の差し替え */}
+        {/* アップロード済みの写真・動画(プレビュー + 差し替え) */}
         <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
           <h3 className="text-sm font-bold text-gray-800 mb-3">アップロード済みの写真・動画</h3>
           {files.length === 0 ? (
             <p className="text-xs text-gray-400">ファイルがありません</p>
           ) : (
-            files.map((f) => (
-              <div key={f.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                <span className="text-xs text-gray-600">{f.kind}</span>
-                {editable && (
-                  <label className="flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-md cursor-pointer" style={{ color: PINK, border: `1px solid ${PINK}55` }}>
-                    {replacingKind === f.kind ? <Loader2 size={11} className="animate-spin" /> : <Upload size={11} />}
-                    差し替え
-                    <input
-                      type="file"
-                      accept={f.file_type === 'video' ? 'video/*' : 'image/*'}
-                      className="hidden"
-                      onChange={(e) => {
-                        const nf = e.target.files?.[0];
-                        e.target.value = '';
-                        if (nf) handleReplaceFile(f.kind ?? 'unknown', f.file_type ?? 'image', nf);
-                      }}
-                    />
-                  </label>
-                )}
-              </div>
-            ))
+            <div className="space-y-4">
+              {files.map((f) => {
+                const url = fileUrls[f.id];
+                const isVideo = f.file_type === 'video';
+                const replacing = replacingKind === f.kind;
+                return (
+                  <div key={f.id} className="rounded-xl border border-gray-100 overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-2 bg-gray-50">
+                      <span className="text-xs font-bold text-gray-700">{kindLabel(f.kind)}</span>
+                      {editable ? (
+                        <label
+                          className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md cursor-pointer text-white"
+                          style={{ backgroundColor: replacing ? '#9CA3AF' : PINK }}
+                        >
+                          {replacing ? <Loader2 size={11} className="animate-spin" /> : <Upload size={11} />}
+                          差し替え
+                          <input
+                            type="file"
+                            accept={isVideo ? 'video/*' : 'image/*'}
+                            className="hidden"
+                            disabled={replacing}
+                            onChange={(e) => {
+                              const nf = e.target.files?.[0];
+                              e.target.value = '';
+                              if (nf) handleReplaceFile(f.kind ?? 'unknown', f.file_type ?? 'image', nf);
+                            }}
+                          />
+                        </label>
+                      ) : (
+                        <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md bg-gray-200 text-gray-400 cursor-not-allowed">
+                          <Lock size={11} />
+                          差し替え不可
+                        </span>
+                      )}
+                    </div>
+                    <div className="bg-black/[0.02] flex items-center justify-center min-h-[140px] p-2">
+                      {url == null ? (
+                        <span className="text-xs text-gray-400 py-8">プレビューを読み込み中…</span>
+                      ) : isVideo ? (
+                        <video src={url} controls playsInline className="max-h-72 w-full rounded-lg bg-black" />
+                      ) : (
+                        <img src={url} alt={kindLabel(f.kind)} className="max-h-72 w-auto rounded-lg object-contain" />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {!editable && (
+                <p className="text-xs text-orange-600">
+                  すでに作成が始まっています。データの差し替えはできません。
+                </p>
+              )}
+            </div>
           )}
         </div>
 
-        {editable && (
-          <PinkButton fullWidth size="lg" onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            修正内容を保存する
-          </PinkButton>
-        )}
+        {/* 保存ボタン(下) */}
+        {renderSave('bottom')}
       </div>
     </div>
   );

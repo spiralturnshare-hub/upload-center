@@ -306,17 +306,36 @@ export async function fetchUploadById(uploadId: string): Promise<UploadFullRecor
 }
 
 /**
- * 修正可否の判定。production_workflowsのmeasure_doneまたはanaly_doneが
- * 立っていれば「作製アクション開始済み」とみなし、顧客側の修正を禁止する。
+ * 修正可否の判定。production_workflows の measure_done / analy_done / design_done の
+ * いずれかが立っていれば「作製(計測・動作分析・設計)が開始済み」とみなし、
+ * 顧客側の修正・差し替えを禁止する(2026-09-04 冨永社長: 設計開始も含める)。
+ * 工程レコードが無ければ未着手として修正可。
  */
 export async function canCustomerEditUpload(uploadId: string): Promise<boolean> {
   const { data, error } = await supabase
     .from('production_workflows')
-    .select('measure_done, analy_done')
+    .select('measure_done, analy_done, design_done')
     .eq('upload_id', uploadId)
     .maybeSingle();
-  if (error || !data) return true; // 工程レコードが無ければ未着手なので修正可
-  return !(data.measure_done || data.analy_done);
+  if (error || !data) return true;
+  return !(data.measure_done || data.analy_done || data.design_done);
+}
+
+/**
+ * uploads_files.url を「表示できる URL」に解決する。
+ *   - すでに http(s):// なら そのまま
+ *   - それ以外(Storage の相対パス)は upsys バケットの署名付き URL(1時間)。
+ *     署名に失敗したらバケット公開 URL にフォールバック。
+ */
+export async function getUploadFileUrl(pathOrUrl: string | null): Promise<string | null> {
+  if (!pathOrUrl) return null;
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  try {
+    const { data, error } = await supabase.storage.from('upsys').createSignedUrl(pathOrUrl, 3600);
+    if (!error && data?.signedUrl) return data.signedUrl;
+  } catch { /* fallthrough */ }
+  const pub = supabase.storage.from('upsys').getPublicUrl(pathOrUrl);
+  return pub.data.publicUrl ?? null;
 }
 
 export async function fetchCurrentUploadFiles(uploadId: string): Promise<
