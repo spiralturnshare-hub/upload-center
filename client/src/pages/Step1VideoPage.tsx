@@ -28,9 +28,15 @@ export default function Step1VideoPage() {
   // 選択されたインソール種別から必要な動画種別を取得
   const requiredVideoTypes = getRequiredVideoTypes(selectedInsoles);
 
-  const [uploadStatus, setUploadStatus] = useState<Record<VideoKind, 'idle' | 'uploading' | 'success' | 'error'>>({
-    walk: 'idle', oneleg: 'idle', sidejump: 'idle', running: 'idle', swing: 'idle',
-  });
+  // 再開(resumeUploadSession)時は videoUploaded が既に埋まっているので、
+  // ローカルの表示状態も 'success' で初期化してカードを「済み」表示にする。
+  const [uploadStatus, setUploadStatus] = useState<Record<VideoKind, 'idle' | 'uploading' | 'success' | 'error'>>(() => ({
+    walk: videoUploaded.walk ? 'success' : 'idle',
+    oneleg: videoUploaded.oneleg ? 'success' : 'idle',
+    sidejump: videoUploaded.sidejump ? 'success' : 'idle',
+    running: videoUploaded.running ? 'success' : 'idle',
+    swing: videoUploaded.swing ? 'success' : 'idle',
+  }));
   const [uploadProgress, setUploadProgress] = useState<Record<VideoKind, number>>({
     walk: 0, oneleg: 0, sidejump: 0, running: 0, swing: 0,
   });

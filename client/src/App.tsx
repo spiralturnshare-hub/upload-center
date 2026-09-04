@@ -22,6 +22,7 @@ import AccountProfilePage from "./pages/AccountProfilePage";
 import PaymentIdUploadPage from "./pages/PaymentIdUploadPage";
 import GuestUploadPage from "./pages/GuestUploadPage";
 import EditUploadPage from "./pages/EditUploadPage";
+import OrderListPage from "./pages/OrderListPage";
 
 // ============================================================
 // Design: ビビッド・フォーム
@@ -77,6 +78,8 @@ function AppRouter() {
       return <GuestUploadPage />;
     case 'edit-upload':
       return <EditUploadPage />;
+    case 'order-list':
+      return <OrderListPage />;
     default:
       return <HomePage />;
   }

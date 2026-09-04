@@ -5,6 +5,7 @@ import AppLayout from '@/components/AppLayout';
 import type { AppLayoutHandle } from '@/components/AppLayout';
 import PinkButton from '@/components/PinkButton';
 import { toast } from 'sonner';
+import { saveMyProfile } from '@/lib/supabase';
 
 const ERROR_BORDER = '#F97316';
 const ERROR_BG = '#FFF7ED';
@@ -94,9 +95,10 @@ function TextInput({ value, onChange, placeholder, type = 'text', inputMode }: {
 }
 
 export default function AccountProfilePage({ returnTo }: { returnTo?: string }) {
-  const { setCurrentPage, accountProfile, setAccountProfile, isLoggedIn } = useUpload();
+  const { setCurrentPage, accountProfile, setAccountProfile, isLoggedIn, reloadAccountProfile } = useUpload();
   const [form, setForm] = useState<AccountProfile>(accountProfile ?? defaultProfile);
   const [zipLoading, setZipLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const layoutRef = useRef<AppLayoutHandle>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
 
@@ -133,7 +135,7 @@ export default function AccountProfilePage({ returnTo }: { returnTo?: string }) 
 
   const KATAKANA_REGEX = /^[ァ-ヶー　 ]+$/;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     layoutRef.current?.scrollToTop();
     const newErrors: Record<string, boolean> = {};
     let hasError = false;
@@ -152,11 +154,24 @@ export default function AccountProfilePage({ returnTo }: { returnTo?: string }) 
       toast.error('未入力の項目があります');
       return;
     }
+
+    // React state を即時反映しつつ、public.users に永続化(再サインインで復元される)
+    setSaving(true);
     setAccountProfile(form);
-    toast.success('アカウント情報を保存しました');
-    setTimeout(() => {
-      setCurrentPage(returnTo ?? 'home');
-    }, 600);
+    try {
+      await saveMyProfile(form);
+      await reloadAccountProfile();
+      toast.success('アカウント情報を保存しました');
+      setTimeout(() => setCurrentPage(returnTo ?? 'home'), 500);
+    } catch (e) {
+      toast.error(
+        e instanceof Error
+          ? `保存に失敗しました: ${e.message}`
+          : '保存に失敗しました。サインインし直してお試しください。',
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   const isEditing = accountProfile !== null;
@@ -169,11 +184,11 @@ export default function AccountProfilePage({ returnTo }: { returnTo?: string }) 
       onBack={() => setCurrentPage(returnTo ?? 'home')}
       footer={
         <div className="flex gap-3">
-          <PinkButton variant="outline" size="md" onClick={() => setCurrentPage(returnTo ?? 'home')} className="flex-1">
+          <PinkButton variant="outline" size="md" onClick={() => setCurrentPage(returnTo ?? 'home')} className="flex-1" disabled={saving}>
             キャンセル
           </PinkButton>
-          <PinkButton size="md" onClick={handleSave} className="flex-1">
-            {isEditing ? '変更を保存' : '登録する'}
+          <PinkButton size="md" onClick={handleSave} className="flex-1" disabled={saving}>
+            {saving ? '保存中…' : isEditing ? '変更を保存' : '登録する'}
           </PinkButton>
         </div>
       }

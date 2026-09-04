@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { InsoleKind } from '@/lib/insoleConfig';
-import { supabase, fetchMyCustomerId, ensureUploadRow, lastCustomerIdDiag } from '@/lib/supabase';
+import {
+  supabase, fetchMyCustomerId, ensureUploadRow, lastCustomerIdDiag,
+  fetchMyProfile, fetchUploadForResume,
+} from '@/lib/supabase';
+
+// ホーム「注文一覧」からどのリストを開いているか
+export type OrderListMode = 'needing' | 'in-progress' | 'completed';
 
 // ============================================================
 // Design: ビビッド・フォーム
@@ -152,6 +158,17 @@ interface UploadContextType {
     selectedInsoles?: InsoleKind[];
     isGuest?: boolean;
   }) => Promise<string>;
+  /**
+   * 途中まで進んだアップロードを「続きから」再開する。
+   * uploads 行の JSON 各列 + uploads_files(is_current)を UploadData に復元し、
+   * uploadId は既存のものを使う(新規作成しない)。最初の未完ステップへ遷移する。
+   */
+  resumeUploadSession: (uploadId: string, opts?: { orderId?: string; orderName?: string }) => Promise<void>;
+  // ホーム「注文一覧」で開いているリスト種別
+  orderListMode: OrderListMode;
+  setOrderListMode: (m: OrderListMode) => void;
+  // アカウント情報の DB 再読込(保存後などに呼ぶ)
+  reloadAccountProfile: () => Promise<void>;
 }
 
 const defaultShoeInfo: ShoeInfo = {
@@ -212,16 +229,39 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState<string | null>(null);
+  const [orderListMode, setOrderListMode] = useState<OrderListMode>('needing');
 
-  // Supabase Auth のセッションを監視して userId(auth)と customerId(public.users.id)を取得
+  // アカウント情報を public.users から読み直す(サインイン時・保存後)
+  const reloadAccountProfile = async () => {
+    try {
+      const prof = await fetchMyProfile();
+      setAccountProfile(prof);
+    } catch {
+      // 読み込み失敗は致命的でない(未登録扱いで進める)
+    }
+  };
+
+  // Supabase Auth のセッションを監視して:
+  //   - userId(auth.uid)/ customerId(public.users.id)を解決
+  //   - isLoggedIn / userEmail をセッションから復元(リロードで「ログアウト扱い」になっていた)
+  //   - アカウント情報(public.users)をロード ── 再サインインで復元される(2026-09-04)
   useEffect(() => {
-    const sync = async (uid: string | null) => {
+    const sync = async (session: { user?: { id?: string; email?: string } } | null) => {
+      const uid = session?.user?.id ?? null;
       setUserId(uid);
-      setCustomerId(uid ? await fetchMyCustomerId() : null);
+      setIsLoggedIn(!!uid);
+      setUserEmail(session?.user?.email ?? '');
+      if (uid) {
+        setCustomerId(await fetchMyCustomerId());
+        await reloadAccountProfile();
+      } else {
+        setCustomerId(null);
+        setAccountProfile(null);
+      }
     };
-    supabase.auth.getSession().then(({ data }) => { void sync(data.session?.user?.id ?? null); });
+    supabase.auth.getSession().then(({ data }) => { void sync(data.session ?? null); });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      void sync(session?.user?.id ?? null);
+      void sync(session ?? null);
     });
     return () => listener.subscription.unsubscribe();
   }, []);
@@ -282,6 +322,69 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     return newId;
   };
 
+  /**
+   * 途中まで進んだアップロードを再開する。
+   * uploads 行の JSON 各列 + uploads_files(is_current)を UploadData へ復元し、
+   * currentPage を step1 にする(各 Step は Context から描画するので、
+   * アップロード済み項目は「済み」表示になる)。
+   */
+  const resumeUploadSession = async (
+    uploadId: string,
+    opts?: { orderId?: string; orderName?: string },
+  ): Promise<void> => {
+    const { upload, files } = await fetchUploadForResume(uploadId);
+
+    // uploads_files の種別からアップロード済みフラグを組み立てる
+    const videoUploaded: Record<string, boolean> = {};
+    const shoePhotosUploaded: Record<string, boolean> = {};
+    let footPhotosUploaded = false;
+    for (const f of files) {
+      const k = f.kind ?? '';
+      if (f.file_type === 'video') {
+        videoUploaded[k] = true;
+      } else if (k === 'foot') {
+        footPhotosUploaded = true;
+      } else if (k === 'shoes') {
+        // insole_sku 単位で「この種別の靴写真あり」
+        if (f.insole_sku) shoePhotosUploaded[f.insole_sku] = true;
+      }
+    }
+
+    const asObj = (v: unknown): Record<string, unknown> =>
+      v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
+    const painJson = asObj(upload.pain_info);
+    const purposeJson = asObj(upload.purpose_info);
+    const takoJson = asObj(upload.tako_info);
+    const custJson = asObj(upload.customer_info);
+    const shoeJson = asObj(upload.shoe_infos) as Record<string, ShoeInfo>;
+
+    setUploadData(prev => ({
+      ...prev,
+      uploadId,
+      selectedInsoles: (upload.selected_insoles as InsoleKind[]) ?? prev.selectedInsoles,
+      videoUploaded,
+      footPhotosUploaded,
+      shoePhotosUploaded,
+      shoeInfos: Object.keys(shoeJson).length ? shoeJson : prev.shoeInfos,
+      roomColor: upload.room_color ?? prev.roomColor,
+      painInfo: { ...prev.painInfo, ...(painJson as Partial<typeof prev.painInfo>) },
+      purposeInfo: { ...prev.purposeInfo, ...(purposeJson as Partial<typeof prev.purposeInfo>) },
+      takoInfo: { ...prev.takoInfo, ...(takoJson as Partial<typeof prev.takoInfo>) },
+      customerInfo: {
+        ...prev.customerInfo,
+        ...(custJson as Partial<typeof prev.customerInfo>),
+        userName: upload.insole_user_name ?? (custJson.userName as string) ?? prev.customerInfo.userName,
+        userKana: upload.insole_user_kana ?? (custJson.userKana as string) ?? prev.customerInfo.userKana,
+      },
+    }));
+    if (opts?.orderId) setOrderId(opts.orderId);
+    if (opts?.orderName) setOrderName(opts.orderName);
+    else if (upload.order_name) setOrderName(upload.order_name);
+    if (upload.order_id) setOrderId(upload.order_id);
+
+    setCurrentPage('step1');
+  };
+
   const isProfileRegistered = accountProfile !== null &&
     (accountProfile.firstName !== '' || accountProfile.lastName !== '');
 
@@ -301,6 +404,9 @@ export function UploadProvider({ children }: { children: ReactNode }) {
       userId,
       customerId,
       initUploadSession,
+      resumeUploadSession,
+      orderListMode, setOrderListMode,
+      reloadAccountProfile,
     }}>
       {children}
     </UploadContext.Provider>

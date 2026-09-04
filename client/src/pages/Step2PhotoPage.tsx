@@ -36,9 +36,14 @@ export default function Step2PhotoPage() {
   // 靴の写真が必要なインソール（room以外）
   const shoePhotoInsoles = selectedInsoles.filter(k => k !== 'room');
 
-  const [footStatus, setFootStatus] = useState<UploadStatus>('idle');
+  // 再開時は context のアップロード済みフラグから 'success' で初期化(カードを「済み」表示に)
+  const [footStatus, setFootStatus] = useState<UploadStatus>(() => (footPhotosUploaded ? 'success' : 'idle'));
   const [footProgress, setFootProgress] = useState<number>(0);
-  const [shoeStatus, setShoeStatus] = useState<Record<string, UploadStatus>>({});
+  const [shoeStatus, setShoeStatus] = useState<Record<string, UploadStatus>>(() => {
+    const init: Record<string, UploadStatus> = {};
+    Object.keys(shoePhotosUploaded).forEach(k => { if (shoePhotosUploaded[k]) init[k] = 'success'; });
+    return init;
+  });
   const [shoeProgress, setShoeProgress] = useState<Record<string, number>>({});
 
   /**

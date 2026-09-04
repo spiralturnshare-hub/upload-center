@@ -3,6 +3,7 @@
 // Green Supabase: fhamrkmsxidxayaoexso
 // ============================================================
 import { createClient } from '@supabase/supabase-js';
+import type { AccountProfile } from '@/contexts/UploadContext';
 
 // 2026-09-04: Legacy anon JWT のハードコード fallback を撤去(docs/35 WS-B / docs/36 §2)。
 //   Green の Legacy JWT Secret 露出の是正で新 API キー体系へ移行。旧 anon JWT をソース・git 履歴に残さない。
@@ -393,6 +394,237 @@ export async function uploadFileToStorage(
     .getPublicUrl(storagePath);
 
   return { path: storagePath, url: urlData.publicUrl };
+}
+
+// ============================================================
+// アカウント情報(public.users)の永続化
+//   AccountProfilePage の入力を React state だけでなく public.users に保存し、
+//   再サインイン時に復元できるようにする(2026-09-04 冨永社長指摘)。
+//   保存先 = ログインユーザーの public.users 行(migration 008 の同期トリガーで必ず存在)。
+//   RLS: users_select_own / users_update_own(auth.uid() = auth_user_id)経由。
+//
+//   ⚠️ 氏名の対応に注意: AccountProfile の firstName ラベルは「姓」、lastName は「名」
+//   (このアプリ独自の命名)。public.users は last_name=姓 / first_name=名。
+//   → firstName↔last_name / lastName↔first_name で入れ替えてマップする。
+// ============================================================
+
+/** ログインセッションの email を返す(注文照合キー) */
+export async function getSessionEmail(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user?.email ?? null;
+}
+
+const PROFILE_USER_COLUMNS =
+  'last_name, first_name, last_name_kana, first_name_kana, phone, is_overseas, ' +
+  'postal_code, prefecture, city, address_line1, address_line2, ' +
+  'country, overseas_zip, overseas_state, overseas_city, overseas_address';
+
+/** public.users の行 → AccountProfile 形へ */
+function rowToProfile(r: Record<string, unknown>): AccountProfile {
+  const s = (v: unknown) => (typeof v === 'string' ? v : '');
+  return {
+    firstName: s(r.last_name),          // 姓
+    lastName: s(r.first_name),          // 名
+    firstNameKana: s(r.last_name_kana), // 姓カナ
+    lastNameKana: s(r.first_name_kana), // 名カナ
+    phone: s(r.phone),
+    isOverseas: Boolean(r.is_overseas),
+    postalCode: s(r.postal_code),
+    prefecture: s(r.prefecture),
+    city: s(r.city),
+    address: s(r.address_line1),
+    building: s(r.address_line2),
+    country: s(r.country),
+    overseasZip: s(r.overseas_zip),
+    overseasState: s(r.overseas_state),
+    overseasCity: s(r.overseas_city),
+    overseasAddress: s(r.overseas_address),
+  };
+}
+
+/** AccountProfile → public.users の更新用オブジェクトへ */
+function profileToRow(p: AccountProfile): Record<string, unknown> {
+  return {
+    last_name: p.firstName,
+    first_name: p.lastName,
+    last_name_kana: p.firstNameKana,
+    first_name_kana: p.lastNameKana,
+    phone: p.phone,
+    is_overseas: p.isOverseas,
+    postal_code: p.postalCode,
+    prefecture: p.prefecture,
+    city: p.city,
+    address_line1: p.address,
+    address_line2: p.building,
+    country: p.country,
+    overseas_zip: p.overseasZip,
+    overseas_state: p.overseasState,
+    overseas_city: p.overseasCity,
+    overseas_address: p.overseasAddress,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+/** ログインユーザーのアカウント情報を public.users から読む。未登録(氏名空)なら null */
+export async function fetchMyProfile(): Promise<AccountProfile | null> {
+  const { data: sess } = await supabase.auth.getSession();
+  const authUid = sess.session?.user?.id;
+  if (!authUid) return null;
+  const { data, error } = await supabase
+    .from('users')
+    .select(PROFILE_USER_COLUMNS)
+    .eq('auth_user_id', authUid)
+    .maybeSingle();
+  if (error || !data) return null;
+  const prof = rowToProfile(data as unknown as Record<string, unknown>);
+  // 姓も名も空 = まだ登録していない扱い(HomePage の「未登録」バッジ用)
+  if (!prof.firstName && !prof.lastName) return null;
+  return prof;
+}
+
+/** ログインユーザーのアカウント情報を public.users に保存(UPDATE。行は 008 トリガーで必ずある) */
+export async function saveMyProfile(profile: AccountProfile): Promise<void> {
+  const { data: sess } = await supabase.auth.getSession();
+  const authUid = sess.session?.user?.id;
+  if (!authUid) throw new Error('サインインが必要です');
+  const { error } = await supabase
+    .from('users')
+    .update(profileToRow(profile))
+    .eq('auth_user_id', authUid);
+  if (error) {
+    throw new Error(`アカウント情報の保存に失敗 [${error.code ?? '?'}] ${error.message}`);
+  }
+}
+
+// ============================================================
+// ホームの「注文一覧」= 決済済み注文とアップロード状態の突合
+//   仕様(Bacon_Brain/20_技術・システム/決済とアップロードの連動.md / docs/28):
+//   dealer/customer-insole-order で発注 + Stripe 決済完了 → orders に行ができ、
+//   決済メール(orders.customer_email)がサインインユーザーと一致する注文を、
+//   uploads の有無・状態で3分類する。
+//     - needing    : 決済済みだが完了アップロードが無い(未着手)
+//     - inProgress : uploads.status='draft' 行がある(途中離脱)
+//     - completed  : uploads.status IN ('submitted','done')
+//   「決済済み」= orders.status IN ('confirmed','processing','completed')
+// ============================================================
+export interface DashboardOrder {
+  id: string;
+  orderName: string | null;
+  status: string | null;
+  createdAt: string | null;
+  insoleKinds: string[];        // ['walk','room'] 等。表示は「歩き用・ルーム用のアップロードが必要です」
+  roomShoes: boolean;
+}
+export interface DashboardInProgress extends DashboardOrder {
+  uploadId: string;
+  uploadedKinds: string[];      // これまでにアップロード済みのファイル種別(進捗表示用)
+}
+export interface DashboardCompleted extends DashboardOrder {
+  uploadId: string;
+  uploadStatus: string | null;
+}
+export interface OrderDashboard {
+  needing: DashboardOrder[];
+  inProgress: DashboardInProgress[];
+  completed: DashboardCompleted[];
+}
+
+const PAID_STATUSES = ['confirmed', 'processing', 'completed'];
+
+export async function fetchOrderDashboard(): Promise<OrderDashboard> {
+  const empty: OrderDashboard = { needing: [], inProgress: [], completed: [] };
+  const email = await getSessionEmail();
+  const myCustomerId = await fetchMyCustomerId();
+  if (!email && !myCustomerId) return empty;
+
+  // 1) 自分の決済済み注文
+  let oq = supabase
+    .from('orders')
+    .select('id, order_name, insole1_kind, insole2_kind, room_shoes, status, created_at')
+    .in('status', PAID_STATUSES)
+    .order('created_at', { ascending: false });
+  oq = email ? oq.eq('customer_email', email) : oq.eq('user_id', myCustomerId as string);
+  const { data: orders, error: oErr } = await oq;
+  if (oErr) throw oErr;
+  const list = orders ?? [];
+  if (list.length === 0) return empty;
+
+  // 2) それらの注文に紐づく uploads
+  const orderIds = list.map(o => o.id);
+  const { data: ups } = await supabase
+    .from('uploads')
+    .select('id, order_id, status, updated_at')
+    .in('order_id', orderIds);
+  const upByOrder = new Map<string, { id: string; status: string | null; updated_at: string | null }[]>();
+  (ups ?? []).forEach(u => {
+    if (!u.order_id) return;
+    const arr = upByOrder.get(u.order_id) ?? [];
+    arr.push(u);
+    upByOrder.set(u.order_id, arr);
+  });
+
+  // 3) draft の uploads のファイル種別(進捗表示用)
+  const draftIds = (ups ?? []).filter(u => u.status === 'draft').map(u => u.id);
+  const kindsByUpload = new Map<string, Set<string>>();
+  if (draftIds.length) {
+    const { data: ufs } = await supabase
+      .from('uploads_files')
+      .select('upload_id, kind')
+      .in('upload_id', draftIds)
+      .eq('is_current', true);
+    (ufs ?? []).forEach(f => {
+      const set = kindsByUpload.get(f.upload_id) ?? new Set<string>();
+      if (f.kind) set.add(f.kind);
+      kindsByUpload.set(f.upload_id, set);
+    });
+  }
+
+  const out: OrderDashboard = { needing: [], inProgress: [], completed: [] };
+  for (const o of list) {
+    const base: DashboardOrder = {
+      id: o.id,
+      orderName: o.order_name,
+      status: o.status,
+      createdAt: o.created_at,
+      insoleKinds: [o.insole1_kind, o.insole2_kind].filter(Boolean) as string[],
+      roomShoes: Boolean(o.room_shoes),
+    };
+    const us = upByOrder.get(o.id) ?? [];
+    const done = us.find(u => u.status === 'submitted' || u.status === 'done');
+    const draft = us.find(u => u.status === 'draft');
+    if (done) {
+      out.completed.push({ ...base, uploadId: done.id, uploadStatus: done.status });
+    } else if (draft) {
+      out.inProgress.push({
+        ...base,
+        uploadId: draft.id,
+        uploadedKinds: Array.from(kindsByUpload.get(draft.id) ?? []),
+      });
+    } else {
+      out.needing.push(base);
+    }
+  }
+  return out;
+}
+
+// ============================================================
+// 途中まで進んだアップロードを「続きから」再開するためのロード
+//   uploads 行の JSON 各列 + uploads_files(is_current)を返し、
+//   UploadContext.resumeUploadSession が UploadData 形へ流し込む。
+// ============================================================
+export interface ResumeSnapshot {
+  upload: UploadFullRecord;
+  files: { id: string; kind: string | null; file_type: string | null; insole_sku: string | null; url: string | null }[];
+}
+export async function fetchUploadForResume(uploadId: string): Promise<ResumeSnapshot> {
+  const { data: up, error } = await supabase.from('uploads').select('*').eq('id', uploadId).single();
+  if (error) throw new Error(`アップロードの読み込みに失敗 [${error.code ?? '?'}] ${error.message}`);
+  const { data: files } = await supabase
+    .from('uploads_files')
+    .select('id, kind, file_type, insole_sku, url')
+    .eq('upload_id', uploadId)
+    .eq('is_current', true);
+  return { upload: up as UploadFullRecord, files: files ?? [] };
 }
 
 // ============================================================

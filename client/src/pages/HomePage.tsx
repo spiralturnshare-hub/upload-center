@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { Upload, CheckCircle2, Clock, PauseCircle, Shield, LogOut, User, ChevronRight, QrCode, Settings2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Upload, CheckCircle2, PauseCircle, Shield, LogOut, User, ChevronRight, QrCode, Settings2 } from 'lucide-react';
 import { useUpload } from '@/contexts/UploadContext';
+import type { OrderListMode } from '@/contexts/UploadContext';
 import PinkButton from '@/components/PinkButton';
 import InsoleSelector from '@/components/InsoleSelector';
 import PreShootingDialog from '@/components/PreShootingDialog';
 import type { InsoleKind } from '@/lib/insoleConfig';
 import { INSOLE_DISPLAY_NAMES } from '@/lib/insoleConfig';
+import { fetchOrderDashboard, supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 // ============================================================
@@ -62,9 +64,30 @@ function OrderCard({ icon, title, subtitle, count, onClick }: OrderCardProps) {
 }
 
 export default function HomePage() {
-  const { isLoggedIn, setIsLoggedIn, setCurrentPage, uploadData, updateUploadData, accountProfile, isProfileRegistered, initUploadSession } = useUpload();
+  const { isLoggedIn, setIsLoggedIn, setCurrentPage, uploadData, updateUploadData, accountProfile, isProfileRegistered, initUploadSession, setOrderListMode } = useUpload();
   const [showInsoleSelector, setShowInsoleSelector] = useState(false);
   const [showPreShootingDialog, setShowPreShootingDialog] = useState(false);
+
+  // 注文一覧の件数(決済済み注文 × アップロード状態の突合)
+  const [counts, setCounts] = useState<{ needing: number; inProgress: number; completed: number } | null>(null);
+  useEffect(() => {
+    if (!isLoggedIn) { setCounts(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const d = await fetchOrderDashboard();
+        if (!cancelled) setCounts({ needing: d.needing.length, inProgress: d.inProgress.length, completed: d.completed.length });
+      } catch {
+        if (!cancelled) setCounts({ needing: 0, inProgress: 0, completed: 0 });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isLoggedIn]);
+
+  const openOrderList = (mode: OrderListMode) => {
+    setOrderListMode(mode);
+    setCurrentPage('order-list');
+  };
 
   const handleInsoleChange = (insoles: InsoleKind[]) => {
     updateUploadData({ selectedInsoles: insoles });
@@ -97,7 +120,8 @@ export default function HomePage() {
     setCurrentPage('signin');
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
     setIsLoggedIn(false);
   };
 
@@ -303,20 +327,21 @@ export default function HomePage() {
               <OrderCard
                 icon={<Upload className="w-5 h-5" style={{ color: '#D62598' }} />}
                 title="アップロードが必要な注文"
-                subtitle=""
-                count={2}
-                onClick={() => {}}
+                subtitle={counts ? `決済済みで未アップロードの注文 ${counts.needing} 件` : '読み込み中…'}
+                count={counts?.needing}
+                onClick={() => openOrderList('needing')}
               />
               <OrderCard
                 icon={<PauseCircle className="w-5 h-5" style={{ color: '#D62598' }} />}
                 title="アップロードを中断した注文"
-                subtitle=""
-                onClick={() => {}}
+                subtitle={counts ? `途中で保存された注文 ${counts.inProgress} 件` : '読み込み中…'}
+                count={counts?.inProgress}
+                onClick={() => openOrderList('in-progress')}
               />
               {/* アップロード完了 + 保証サービス 抱き合わせカード */}
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <button
-                  onClick={() => {}}
+                  onClick={() => openOrderList('completed')}
                   className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 active:scale-[0.98] transition-all duration-150 text-left"
                 >
                   <div
@@ -327,12 +352,23 @@ export default function HomePage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-800">アップロードが完了した注文</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {counts ? `${counts.completed} 件 ・ 内容の確認と修正ができます` : '読み込み中…'}
+                    </p>
                   </div>
+                  {counts && counts.completed > 0 && (
+                    <span
+                      className="text-xs font-bold text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: '#D62598' }}
+                    >
+                      {counts.completed}
+                    </span>
+                  )}
                   <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
                 </button>
                 <div className="border-t border-gray-100 mx-4" />
                 <button
-                  onClick={() => {}}
+                  onClick={() => openOrderList('completed')}
                   className="w-full flex items-center gap-4 px-4 py-3 hover:bg-gray-50 active:scale-[0.98] transition-all duration-150 text-left"
                 >
                   <div
@@ -348,12 +384,6 @@ export default function HomePage() {
                   <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
                 </button>
               </div>
-              <OrderCard
-                icon={<Clock className="w-5 h-5" style={{ color: '#D62598' }} />}
-                title="代理アップロードが必要な注文"
-                subtitle="利用者に代わってアップロードをお手伝いできます"
-                onClick={() => {}}
-              />
             </div>
           </div>
         )}
