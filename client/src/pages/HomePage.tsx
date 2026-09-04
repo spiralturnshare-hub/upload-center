@@ -130,11 +130,11 @@ export default function HomePage() {
 
       <main className="flex-1 px-4 py-5 space-y-5 pb-8">
 
-        {/* ── 注文一覧(ログイン時のみ) ── */}
+        {/* ── 通常アップロード(ログイン時のみ) ── */}
         {isLoggedIn && (
           <div className="space-y-2.5">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1">
-              注文一覧
+              通常アップロード
             </h3>
 
             {/* 最上部・最も目立たせる: アップロードが必要な注文(新規+中断を包含。ビビットピンクのグラデ + 柄) */}
@@ -268,13 +268,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ── お知らせ ── */}
-        <div
-          className="rounded-xl p-4 text-xs leading-relaxed"
-          style={{ backgroundColor: PINK_BG, color: '#a81b77' }}
-        >
-          ※ 決済が完了している場合、「決済完了IDでアップロード」からデータのアップロードを行ってください。
-        </div>
       </main>
 
       {/* ヘルプのポップアップ(「?」タップ時のみ・閉じるで元の画面へ) */}
