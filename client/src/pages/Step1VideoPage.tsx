@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
-import { Video, CheckCircle2, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Video, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useUpload } from '@/contexts/UploadContext';
 import AppLayout from '@/components/AppLayout';
 import type { AppLayoutHandle } from '@/components/AppLayout';
 import PinkButton from '@/components/PinkButton';
 import UploadZone from '@/components/UploadZone';
+import ShootingGuideButton from '@/components/ShootingGuideButton';
 import {
   getRequiredVideoTypes,
   VIDEO_KIND_LABELS,
@@ -17,8 +18,6 @@ import { uploadFileToStorage, insertUploadFile } from '@/lib/supabase';
 // Design: ビビッド・フォーム
 // Step1VideoPage: 動画アップロード（STEP 1）
 // ============================================================
-
-const SHOOTING_GUIDE_URL = 'https://dataguide.insoleorder.jp/';
 
 export default function Step1VideoPage() {
   const { setCurrentPage, uploadData, updateUploadData, userId, orderId } = useUpload();
@@ -280,17 +279,7 @@ function VideoUploadCard({
           </p>
         </div>
         {/* 撮影方法を確認するボタン */}
-        <a
-          href={`${SHOOTING_GUIDE_URL}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 hover:opacity-80 active:scale-[0.97] flex-shrink-0"
-          style={{ borderColor: '#2563EB', color: '#2563EB', backgroundColor: '#DBEAFE' }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <ExternalLink className="w-3 h-3" />
-          <span>撮影方法を確認する</span>
-        </a>
+        <ShootingGuideButton />
       </div>
 
       {/* アップロードゾーン */}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Video, ExternalLink } from 'lucide-react';
+import { X, Video } from 'lucide-react';
 import PinkButton from '@/components/PinkButton';
+import { ShootingGuideOverlay } from '@/components/ShootingGuideButton';
 import { toast } from 'sonner';
 
 const ERROR_BORDER = '#F97316';
@@ -12,10 +13,8 @@ const ERROR_BG = '#FFF7ED';
 // Primary: PANTONE Pink C (#2563EB)
 //
 // 元のDartコード: confirm_dialog_take_photo_required
-// リンク先: https://dataguide.insoleorder.jp/
+// 撮影方法ガイドは ShootingGuideButton(アプリ内オーバーレイ)参照
 // ============================================================
-
-const SHOOTING_GUIDE_URL = 'https://dataguide.insoleorder.jp/';
 
 interface PreShootingDialogProps {
   open: boolean;
@@ -26,6 +25,7 @@ interface PreShootingDialogProps {
 export default function PreShootingDialog({ open, onClose, onConfirm }: PreShootingDialogProps) {
   const [checked, setChecked] = useState(false);
   const [checkError, setCheckError] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   if (!open) return null;
 
@@ -69,18 +69,16 @@ export default function PreShootingDialog({ open, onClose, onConfirm }: PreShoot
             事前に必要な動画・画像の撮影を<br />行う必要があります。
           </p>
 
-          {/* 撮影方法ボタン */}
-          <a
-            href={SHOOTING_GUIDE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+          {/* 撮影方法ボタン(アプリ内オーバーレイで表示。タブ遷移せず戻れる) */}
+          <button
+            type="button"
+            onClick={() => setShowGuide(true)}
             className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border-2 text-sm font-semibold transition-all duration-150 active:scale-[0.97] hover:opacity-80"
             style={{ borderColor: '#2563EB', color: '#2563EB' }}
           >
             <Video className="w-4 h-4 flex-shrink-0" />
             <span>撮影方法を確認する</span>
-            <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
-          </a>
+          </button>
 
           {/* 区切り線 */}
           <div className="border-t border-gray-100" />
@@ -129,6 +127,8 @@ export default function PreShootingDialog({ open, onClose, onConfirm }: PreShoot
           to   { opacity: 1; transform: scale(1); }
         }
       `}</style>
+
+      <ShootingGuideOverlay open={showGuide} onClose={() => setShowGuide(false)} />
     </div>
   );
 }

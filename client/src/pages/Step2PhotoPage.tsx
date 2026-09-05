@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Info, Footprints, Shirt, CheckCircle2, ExternalLink, Camera } from 'lucide-react';
+import { Info, Footprints, Shirt, CheckCircle2, Camera } from 'lucide-react';
 import { useUpload } from '@/contexts/UploadContext';
 import AppLayout from '@/components/AppLayout';
 import type { AppLayoutHandle } from '@/components/AppLayout';
 import PinkButton from '@/components/PinkButton';
 import UploadZone from '@/components/UploadZone';
 import IncompleteNotice from '@/components/IncompleteNotice';
+import ShootingGuideButton from '@/components/ShootingGuideButton';
 import { getRequiredImageTypes, INSOLE_DISPLAY_NAMES } from '@/lib/insoleConfig';
 import { toast } from 'sonner';
 import { uploadFileToStorage, insertUploadFile, supabase, fetchCurrentUploadFiles } from '@/lib/supabase';
@@ -20,8 +21,6 @@ const FOOT_GUIDANCE_ORIGIN = 'https://foot-guidance.vercel.app';
 // foot: 常に表示
 // shoes: ルーム用以外のインソールが含まれる場合に表示（インソールごと）
 // ============================================================
-
-const SHOOTING_GUIDE_URL = 'https://dataguide.insoleorder.jp/';
 
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
@@ -321,17 +320,7 @@ export default function Step2PhotoPage() {
                 {footDone ? 'アップロード済み' : 'アップロードされていません'}
               </p>
             </div>
-            <a
-              href={SHOOTING_GUIDE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 hover:opacity-80 active:scale-[0.97] flex-shrink-0"
-              style={{ borderColor: '#2563EB', color: '#2563EB', backgroundColor: '#DBEAFE' }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <ExternalLink className="w-3 h-3" />
-              <span>撮影方法を確認する</span>
-            </a>
+            <ShootingGuideButton />
           </div>
 
           <div className="p-4 space-y-3">
@@ -396,17 +385,7 @@ export default function Step2PhotoPage() {
                     {done ? 'アップロード済み' : 'アップロードされていません'}
                   </p>
                 </div>
-                <a
-                  href={SHOOTING_GUIDE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 hover:opacity-80 active:scale-[0.97] flex-shrink-0"
-                  style={{ borderColor: '#2563EB', color: '#2563EB', backgroundColor: '#DBEAFE' }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <ExternalLink className="w-3 h-3" />
-                  <span>撮影方法を確認する</span>
-                </a>
+                <ShootingGuideButton />
               </div>
 
               <div className="p-4">
