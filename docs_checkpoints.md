@@ -388,3 +388,8 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
 - **2026-09-10: フィーチャーフラグ `VITE_PHONE_LOGIN_ENABLED` 追加**。未設定/`false` の間は SignInPage が従来どおりメールのみ(電話タブ非表示)。Twilio Verify + Turnstile の設定完了後、Vercel で `true` にして再デプロイすると電話タブが有効化。Twilio 側は完了(Verify Service `VA9aa4a8936ad0ea18c6142ee2d6188cfc` 作成済み・Supabase Phone プロバイダ設定済み)。`npx vite build` OK。
 - **2026-09-10 push 完了**: `54b01f6`(`1e8b164` → `54b01f6`)。Vercel 自動デプロイ。フラグ OFF のため顧客画面は変化なし。戻すなら Vercel「Promote to Production」で `1e8b164` のデプロイへ。
 - **2026-09-10 電話ログイン有効化**: Cloudflare Turnstile ウィジェット作成・Site Key を Vercel `VITE_TURNSTILE_SITE_KEY`(Config/Production)・Secret を Supabase Green の Attack Protection(Captcha=Turnstile)に設定。Vercel `VITE_PHONE_LOGIN_ENABLED=true` を追加。この commit の push で再ビルド→電話タブが本番で有効化。ドメイン変更時の Turnstile Hostname 更新は `spiralturn-green-integration/docs/27` §5b-1。
+
+### CP8 (2026-09-10 サインインUI統合 + 孤児注文の引き取り ※一部未適用)
+- サインイン入力欄を1つに統合(`@`ならメール/電話番号なら SMS 自動判別)。`176d366` で push 済み。
+- `lib/supabase.ts`: `claimMyOrphanOrders()` 追加 + `fetchOrderDashboard` が起動時に呼ぶ + 注文照合を `user_id` 優先に変更。**要 Green 適用**: `spiralturn-green-integration/supabase/migrations/035_orphan_order_adoption.sql`(未適用)。ディーラー経由(`orders` 直接 INSERT・`user_id` null)の注文を電話/メールで本人へ引き取る RPC `claim_my_orphan_orders()` + `orders_select_by_phone` RLS。
+- `npx vite build` OK / `npx tsc --noEmit` は `Home.tsx` streamdown のみ。

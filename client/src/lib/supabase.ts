@@ -633,11 +633,40 @@ export async function fetchUploadRevisions(
   return out;
 }
 
+// ============================================================
+// 持ち主未定の注文を「今ログインしている本人」に引き取る(冪等)
+//   なぜ: 発注ルートが2つあり、ディーラー経由(dealer-insole-order)の注文は
+//     `orders` に直接 INSERT され `user_id` が null・`public.users` 行も作られない
+//     (直販 customer-insole-order は settlement_init_order 経由で users 行ができる)。
+//     upload-center は注文を customer_email(RLS)/ user_id でしか照合しないため、
+//     ディーラー経由・メールなしの顧客が自分の決済済み注文に辿り着けなかった。
+//   対策: DB 側 migration 035 で RPC `claim_my_orphan_orders()` を用意。JWT の email/phone
+//     クレームに一致する user_id IS NULL の注文(+ そのアップロード)を本人の users 行へ紐付ける。
+//   どこと繋がるか: spiralturn-green-integration/supabase/migrations/035_orphan_order_adoption.sql
+//   呼ぶタイミング: 注文一覧を引く直前。ログイン後に取扱店が注文を追加したケースも毎回拾える。
+// ============================================================
+export async function claimMyOrphanOrders(): Promise<number> {
+  try {
+    const { data, error } = await supabase.rpc('claim_my_orphan_orders');
+    if (error) {
+      console.warn('[claimMyOrphanOrders] スキップ:', error.message);
+      return 0;
+    }
+    return typeof data === 'number' ? data : 0;
+  } catch (e) {
+    console.warn('[claimMyOrphanOrders] 例外(無視):', e);
+    return 0;
+  }
+}
+
 export async function fetchOrderDashboard(): Promise<OrderDashboard> {
   const empty: OrderDashboard = { needing: [], inProgress: [], completed: [] };
   const email = await getSessionEmail();
   const myCustomerId = await fetchMyCustomerId();
   if (!email && !myCustomerId) return empty;
+
+  // ディーラー経由等で user_id 未設定の注文を本人へ引き取ってから照合する(migration 035)
+  await claimMyOrphanOrders();
 
   const out: OrderDashboard = { needing: [], inProgress: [], completed: [] };
   const kindsByUpload = new Map<string, Set<string>>();
@@ -663,7 +692,9 @@ export async function fetchOrderDashboard(): Promise<OrderDashboard> {
     .select('id, order_name, insole1_kind, insole2_kind, room_shoes, status, created_at')
     .in('status', PAID_STATUSES)
     .order('created_at', { ascending: false });
-  oq = email ? oq.eq('customer_email', email) : oq.eq('user_id', myCustomerId as string);
+  // claimMyOrphanOrders() 後は、本人の注文(メール一致・電話一致どちらも)は user_id が本人を指す。
+  // → user_id 照合を優先。取れない時のみ customer_email にフォールバック。
+  oq = myCustomerId ? oq.eq('user_id', myCustomerId) : oq.eq('customer_email', email as string);
   const { data: orders, error: oErr } = await oq;
   if (oErr) throw oErr;
   const list = orders ?? [];
