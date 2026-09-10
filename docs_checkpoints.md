@@ -357,3 +357,32 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
 - **バグ修正**: `EditUploadPage` の「靴情報(walk)」のような見出しが `insoleKind` の内部コードのまま表示されていた。`OrderListPage` は `INSOLE_DISPLAY_NAMES` で日本語化済みだったのに `EditUploadPage` だけ翻訳漏れ。`lib/insoleConfig.ts` の `INSOLE_DISPLAY_NAMES` を import して修正。
 - **`PaymentCompletePage.tsx` 新設**: dealer-insole-order の対面決済(QR決済)完了後、Stripe が upload-center へリダイレクトする先(`docs/34` §4Y)。`UploadContext.tsx` の `currentPage` 初期化で起動時に1回だけ `?payment=success`/`?payment=canceled` を読み、該当ページへ(ログイン状態と無関係に効く)。注文詳細は表示せず「ありがとうございました」+「アップロードセンターへ」ボタンのみ(決済完了メールが詳細を送る仕様のため・冨永社長 2026-09-05)。`App.tsx` に `payment-complete`/`payment-canceled` ケースを追加。
 - ビルド・tsc(`Home.tsx` streamdown 以外)OK。DB変更なし。
+
+---
+
+### CP7 (2026-09-09 サインインに「電話番号ログイン(SMS認証)」を追加 ※未push・未デプロイ)
+- 変更前コミット: `1e8b16423f28dff36c97a7025b80aabc84b47397`(`1e8b164` feat(shooting-guide): 撮影方法ガイドを外部タブからアプリ内オーバーレイへ)
+- 変更前 Vercel Production: CP6 以降のデプロイ URL(最新本番)。問題時は Vercel ダッシュボード →「Promote to Production」で1e8b164 のデプロイへ即戻し。
+- 指示元: 冨永社長「アップロードセンターに電話番号でもログインできるように。キャリアメール警告を無くしたい」(2026-09-09)。範囲は upload-center 先行、dealer は後日。
+- 本体ノート: `Bacon_Brain/20_技術・システム/電話番号ログイン(SMS認証)導入.md`
+
+**コード変更**
+- `client/src/pages/SignInPage.tsx`: 「メール / 電話番号」切替タブを追加。電話は `signInWithOtp({ phone })` → SMS →`verifyOtp({ phone, type:'sms' })`。既存のメールOTP経路は不変。
+- `client/src/lib/phone.ts` 新設: 入力電話番号 → 日本 E.164(+81…)正規化。DB 側 `migrations/034` の `normalize_jp_phone()` とロジックを一致させること。
+- `client/src/components/Turnstile.tsx` 新設 + `client/index.html` に Turnstile api.js を追加: 送信ボタンの SMSポンピング対策。`VITE_TURNSTILE_SITE_KEY` 未設定なら素通り(本番では必ず設定 + Supabase 側 Captcha protection を ON)。
+
+**要 Green 適用(未適用)**: `spiralturn-green-integration/supabase/migrations/034_users_phone_login.sql`
+- `public.users.phone_login`(SMS認証済みの名寄せキー)+ クライアント書込ガード + `handle_new_auth_user` 拡張(電話のみ経路)+ 電話認証反映トリガー + `orders_select_own`(電話ログインは JWT に email が無く、既存の email 一致ポリシーだけだと自分の注文が0件になるため)。
+- ロールバック: `spiralturn-green-integration/supabase/queries/034_rollback.sql`(単独 Run)。
+
+**要 環境設定(冨永社長 hands-on)**
+- Twilio(Verify)アカウント + Supabase 管理画面 Phone Provider に SID/Token。
+- Cloudflare Turnstile サイト作成 → サイトキーを Vercel `VITE_TURNSTILE_SITE_KEY`、シークレットを Supabase 管理画面 Attack Protection。
+- Twilio 請求上限 + 日本(+81)限定。
+- (別タスク)Resend カスタム SMTP(`insoleorder.jp`)。
+
+- ビルド `npx vite build` OK。`npx tsc --noEmit` は `Home.tsx` の streamdown 既知エラーのみ(本変更起因のエラーなし)。
+
+- **2026-09-09: migration 034 を Green に適用・検証済み**(`queries/034_verify.sql` 全項目 期待値一致)。以後この CP7 のコード push が可能な状態。環境設定(Twilio / Turnstile / SMTP)は未。
+
+- **2026-09-10: フィーチャーフラグ `VITE_PHONE_LOGIN_ENABLED` 追加**。未設定/`false` の間は SignInPage が従来どおりメールのみ(電話タブ非表示)。Twilio Verify + Turnstile の設定完了後、Vercel で `true` にして再デプロイすると電話タブが有効化。Twilio 側は完了(Verify Service `VA9aa4a8936ad0ea18c6142ee2d6188cfc` 作成済み・Supabase Phone プロバイダ設定済み)。`npx vite build` OK。
