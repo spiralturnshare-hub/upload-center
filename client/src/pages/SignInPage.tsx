@@ -13,7 +13,13 @@ const ERROR_BG = '#FFF7ED';
 
 // ============================================================
 // Design: ビビッド・フォーム
-// SignInPage: 「メール」または「電話番号」を選び、確認コードの2ステップで本人確認する。
+// SignInPage: 入力欄は1つ。「メールアドレス または 携帯電話番号」を受け取り、
+//   `@` を含めばメール、そうでなく日本の電話番号として解釈できれば SMS、と自動で振り分ける。
+//   その後、確認コードの2ステップで本人確認する。
+//
+// 【なぜ入力欄1つか (2026-09-10 冨永社長)】
+//   「メール/電話」をタブで選ばせると顧客の手間になる。Slack 等と同じく
+//   「決済時のメールか電話番号をそのまま入れてもらう」方式にする。判別はシステム側で行う。
 //
 // 【メール方式 / 過去の失敗と対策 (2026-08-28)】
 //   メールの「マジックリンク」をモバイルでタップする方式は使わない。
@@ -39,22 +45,36 @@ const ERROR_BG = '#FFF7ED';
 const OTP_MIN_LEN = 4;
 const OTP_MAX_LEN = 10;
 
-// 電話番号ログインの表示スイッチ。
-// Vercel 環境変数 VITE_PHONE_LOGIN_ENABLED='true' のときだけ「メール/電話」タブを出す。
-// 目的: コードを本番 push しても、Twilio Verify + Cloudflare Turnstile(不正SMS送信対策)の
-//       設定が完了するまで顧客に電話タブを見せない(見切り発車で SMS ポンピングの的にしない)。
-// 設定が揃ったら Vercel でこの env を 'true' にして即日有効化する。
+// 電話番号ログインの有効スイッチ。
+// Vercel 環境変数 VITE_PHONE_LOGIN_ENABLED='true' のときだけ、入力欄が電話番号も受け付ける。
+// 目的: Twilio Verify + Cloudflare Turnstile(不正SMS送信対策)の設定が完了するまで、
+//       本番の入力欄をメール専用にしておく(見切り発車で SMS ポンピングの的にしない)。
 const PHONE_LOGIN_ENABLED = import.meta.env.VITE_PHONE_LOGIN_ENABLED === 'true';
 
-type Method = 'email' | 'phone';
+type SentTarget = { kind: 'email'; value: string } | { kind: 'phone'; value: string }; // value: phone は E.164(+81…)
 type Step = 'input' | 'otp';
+
+/**
+ * 入力文字列がメールか電話番号かを判定する。
+ * - `@` を含む → メール(そのまま)
+ * - フラグ ON かつ 日本の電話番号として正規化できる → 電話(E.164)
+ * - どちらでもない → null(呼び出し側でエラー表示)
+ */
+function detectIdentifier(raw: string): SentTarget | null {
+  const s = (raw ?? '').trim();
+  if (!s) return null;
+  if (s.includes('@')) return { kind: 'email', value: s };
+  if (PHONE_LOGIN_ENABLED) {
+    const e164 = toE164JP(s);
+    if (e164) return { kind: 'phone', value: e164 };
+  }
+  return null;
+}
 
 export default function SignInPage() {
   const { setCurrentPage, setIsLoggedIn, setUserEmail } = useUpload();
-  const [method, setMethod] = useState<Method>('email');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [sentPhoneE164, setSentPhoneE164] = useState(''); // 送信時に確定した +81… を verify で使い回す
+  const [identifier, setIdentifier] = useState('');
+  const [sentTarget, setSentTarget] = useState<SentTarget | null>(null); // 送信で確定した宛先。verify で使う
   const [otpCode, setOtpCode] = useState('');
   const [step, setStep] = useState<Step>('input');
   const [loading, setLoading] = useState(false);
@@ -69,21 +89,21 @@ export default function SignInPage() {
     setFieldError(false);
   };
 
-  const switchMethod = (m: Method) => {
-    if (!PHONE_LOGIN_ENABLED) return; // フラグ OFF の間はメール固定
-    if (m === method) return;
-    setMethod(m);
-    setStep('input');
-    setOtpCode('');
-    setCaptchaToken(null);
-    setCaptchaKey((k) => k + 1);
-    resetMessages();
-  };
+  const invalidInputMsg = PHONE_LOGIN_ENABLED
+    ? 'メールアドレスまたは携帯電話番号を正しく入力してください'
+    : '正しいメールアドレスを入力してください';
 
   // ---- ステップ1: 確認コードを送信 ----
   const handleSend = async () => {
     layoutRef.current?.scrollToTop();
     resetMessages();
+
+    const target = detectIdentifier(identifier);
+    if (!target) {
+      setError(invalidInputMsg);
+      setFieldError(true);
+      return;
+    }
 
     if (turnstileEnabled && !captchaToken) {
       setError('「私はロボットではありません」の確認を完了してください');
@@ -91,56 +111,29 @@ export default function SignInPage() {
     }
     const captchaOpt = captchaToken ? { captchaToken } : {};
 
-    if (method === 'email') {
-      if (!email || !email.includes('@')) {
-        setError('正しいメールアドレスを入力してください');
-        setFieldError(true);
-        return;
-      }
-      setLoading(true);
-      const { error: otpError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: window.location.origin,
-          ...captchaOpt,
-        },
-      });
-      setLoading(false);
-      if (otpError) {
-        setError(`メール送信に失敗しました: ${otpError.message}`);
-        setCaptchaKey((k) => k + 1);
-        setCaptchaToken(null);
-        return;
-      }
-      setUserEmail(email);
-      setStep('otp');
+    setLoading(true);
+    const { error: otpError } =
+      target.kind === 'email'
+        ? await supabase.auth.signInWithOtp({
+            email: target.value,
+            options: { shouldCreateUser: true, emailRedirectTo: window.location.origin, ...captchaOpt },
+          })
+        : await supabase.auth.signInWithOtp({
+            phone: target.value,
+            options: { shouldCreateUser: true, ...captchaOpt },
+          });
+    setLoading(false);
+
+    if (otpError) {
+      const label = target.kind === 'email' ? 'メール送信に失敗しました' : 'SMS送信に失敗しました';
+      setError(`${label}: ${otpError.message}`);
+      setCaptchaToken(null);
+      setCaptchaKey((k) => k + 1);
       return;
     }
 
-    // method === 'phone'
-    const e164 = toE164JP(phone);
-    if (!e164) {
-      setError('携帯電話番号を正しく入力してください(例:090-1234-5678)');
-      setFieldError(true);
-      return;
-    }
-    setLoading(true);
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      phone: e164,
-      options: {
-        shouldCreateUser: true,
-        ...captchaOpt,
-      },
-    });
-    setLoading(false);
-    if (otpError) {
-      setError(`SMS送信に失敗しました: ${otpError.message}`);
-      setCaptchaKey((k) => k + 1);
-      setCaptchaToken(null);
-      return;
-    }
-    setSentPhoneE164(e164);
+    if (target.kind === 'email') setUserEmail(target.value);
+    setSentTarget(target);
     setStep('otp');
   };
 
@@ -148,6 +141,10 @@ export default function SignInPage() {
   const handleVerifyOtp = async () => {
     layoutRef.current?.scrollToTop();
     resetMessages();
+    if (!sentTarget) {
+      setStep('input');
+      return;
+    }
     if (!otpCode || otpCode.length < OTP_MIN_LEN || otpCode.length > OTP_MAX_LEN) {
       setError('届いた確認コードを入力してください');
       setFieldError(true);
@@ -155,9 +152,9 @@ export default function SignInPage() {
     }
     setLoading(true);
     const { error: verifyError } =
-      method === 'email'
-        ? await supabase.auth.verifyOtp({ email, token: otpCode, type: 'email' })
-        : await supabase.auth.verifyOtp({ phone: sentPhoneE164, token: otpCode, type: 'sms' });
+      sentTarget.kind === 'email'
+        ? await supabase.auth.verifyOtp({ email: sentTarget.value, token: otpCode, type: 'email' })
+        : await supabase.auth.verifyOtp({ phone: sentTarget.value, token: otpCode, type: 'sms' });
     setLoading(false);
     if (verifyError) {
       setError(`確認できませんでした: ${verifyError.message}`);
@@ -168,16 +165,24 @@ export default function SignInPage() {
     setCurrentPage('home');
   };
 
-  const destinationLabel =
-    method === 'email' ? email : sentPhoneE164 ? formatJPForDisplay(sentPhoneE164) : '';
+  const backToInput = () => {
+    setStep('input');
+    setOtpCode('');
+    setCaptchaToken(null);
+    setCaptchaKey((k) => k + 1);
+    resetMessages();
+  };
+
+  const destinationLabel = !sentTarget
+    ? ''
+    : sentTarget.kind === 'email'
+      ? sentTarget.value
+      : formatJPForDisplay(sentTarget.value);
+
+  const HeaderIcon = sentTarget?.kind === 'phone' ? Phone : Mail;
 
   return (
-    <AppLayout
-      ref={layoutRef}
-      title="サインイン"
-      showBack
-      onBack={() => setCurrentPage('home')}
-    >
+    <AppLayout ref={layoutRef} title="サインイン" showBack onBack={() => setCurrentPage('home')}>
       <div className="space-y-6">
         {/* Icon header */}
         <div className="flex flex-col items-center py-4">
@@ -185,21 +190,17 @@ export default function SignInPage() {
             className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3"
             style={{ backgroundColor: '#DBEAFE' }}
           >
-            {method === 'email' ? (
-              <Mail className="w-8 h-8" style={{ color: '#2563EB' }} />
-            ) : (
-              <Phone className="w-8 h-8" style={{ color: '#2563EB' }} />
-            )}
+            <HeaderIcon className="w-8 h-8" style={{ color: '#2563EB' }} />
           </div>
           {step === 'input' ? (
             <>
               <h2 className="text-lg font-bold text-gray-800">
-                {method === 'email' ? 'メールアドレスを入力' : '電話番号を入力'}
+                {PHONE_LOGIN_ENABLED ? 'サインイン情報を入力' : 'メールアドレスを入力'}
               </h2>
               <p className="text-xs text-gray-400 text-center mt-1 leading-relaxed">
-                {method === 'email'
-                  ? 'ご登録のメールアドレスに確認コードをお送りします'
-                  : '入力した携帯電話にSMSで確認コードをお送りします'}
+                {PHONE_LOGIN_ENABLED
+                  ? 'ご注文に利用されたメールアドレス、または携帯電話番号を入力してください'
+                  : 'ご登録のメールアドレスに確認コードをお送りします'}
               </p>
             </>
           ) : (
@@ -207,7 +208,7 @@ export default function SignInPage() {
               <h2 className="text-lg font-bold text-gray-800">確認コードを入力</h2>
               <p className="text-xs text-gray-400 text-center mt-1 leading-relaxed">
                 {destinationLabel} に届いた確認コードを、この画面に入力してください
-                {method === 'email' && '（メール内のリンクは使わないでください）'}
+                {sentTarget?.kind === 'email' && '（メール内のリンクは使わないでください）'}
               </p>
             </>
           )}
@@ -215,78 +216,38 @@ export default function SignInPage() {
 
         {step === 'input' ? (
           <div className="space-y-4">
-            {/* メール / 電話番号 切替タブ(VITE_PHONE_LOGIN_ENABLED='true' のときだけ表示)*/}
-            {PHONE_LOGIN_ENABLED && (
-              <div className="flex rounded-xl bg-gray-100 p-1">
-                {(['email', 'phone'] as Method[]).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => switchMethod(m)}
-                    className={`flex-1 h-9 rounded-lg text-sm font-semibold transition-all ${
-                      method === m ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'
-                    }`}
-                  >
-                    {m === 'email' ? 'メール' : '電話番号'}
-                  </button>
-                ))}
-              </div>
-            )}
-
             <div className="space-y-1.5">
               <label className="text-sm font-semibold text-gray-700">
-                {method === 'email' ? 'メールアドレス' : '携帯電話番号'}
+                {PHONE_LOGIN_ENABLED ? 'メールアドレス または 携帯電話番号' : 'メールアドレス'}
               </label>
               <div className="relative">
-                {method === 'email' ? (
-                  <>
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        resetMessages();
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSend();
-                      }}
-                      placeholder="例）taro-suzuki@example.com"
-                      className="w-full h-12 pl-10 pr-4 rounded-xl border-2 text-sm bg-white focus:outline-none transition-all"
-                      style={{
-                        borderColor: fieldError ? ERROR_BORDER : '#E5E7EB',
-                        backgroundColor: fieldError ? ERROR_BG : 'white',
-                      }}
-                      onFocus={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#2563EB')}
-                      onBlur={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#E5E7EB')}
-                    />
-                  </>
-                ) : (
-                  <>
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="tel"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      value={phone}
-                      onChange={(e) => {
-                        setPhone(e.target.value);
-                        resetMessages();
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSend();
-                      }}
-                      placeholder="例）090-1234-5678"
-                      className="w-full h-12 pl-10 pr-4 rounded-xl border-2 text-sm bg-white focus:outline-none transition-all"
-                      style={{
-                        borderColor: fieldError ? ERROR_BORDER : '#E5E7EB',
-                        backgroundColor: fieldError ? ERROR_BG : 'white',
-                      }}
-                      onFocus={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#2563EB')}
-                      onBlur={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#E5E7EB')}
-                    />
-                  </>
-                )}
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  inputMode={PHONE_LOGIN_ENABLED ? 'email' : 'email'}
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  value={identifier}
+                  onChange={(e) => {
+                    setIdentifier(e.target.value);
+                    resetMessages();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSend();
+                  }}
+                  placeholder={
+                    PHONE_LOGIN_ENABLED ? '例）taro-suzuki@example.com / 090-1234-5678' : '例）taro-suzuki@example.com'
+                  }
+                  className="w-full h-12 pl-10 pr-4 rounded-xl border-2 text-sm bg-white focus:outline-none transition-all"
+                  style={{
+                    borderColor: fieldError ? ERROR_BORDER : '#E5E7EB',
+                    backgroundColor: fieldError ? ERROR_BG : 'white',
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#2563EB')}
+                  onBlur={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#E5E7EB')}
+                />
               </div>
             </div>
 
@@ -300,9 +261,9 @@ export default function SignInPage() {
             </PinkButton>
             <div className="text-center">
               <p className="text-xs text-gray-400 leading-relaxed">
-                {method === 'email'
-                  ? '入力したメールアドレスに確認コードが届きます。次の画面でそのコードを入力してください'
-                  : '入力した携帯電話にSMSで確認コードが届きます。次の画面でそのコードを入力してください'}
+                {PHONE_LOGIN_ENABLED
+                  ? 'メールアドレスなら確認コードをメールで、携帯電話番号ならSMSでお送りします。次の画面でそのコードを入力してください'
+                  : '入力したメールアドレスに確認コードが届きます。次の画面でそのコードを入力してください'}
               </p>
             </div>
           </div>
@@ -342,21 +303,15 @@ export default function SignInPage() {
             <button
               type="button"
               className="w-full text-xs text-gray-400 underline text-center py-1"
-              onClick={() => {
-                setStep('input');
-                setOtpCode('');
-                setCaptchaToken(null);
-                setCaptchaKey((k) => k + 1);
-                resetMessages();
-              }}
+              onClick={backToInput}
             >
-              {method === 'email' ? 'メールアドレスを変更する' : '電話番号を変更する'}
+              入力し直す
             </button>
             <div className="text-center">
               <p className="text-xs text-gray-400 leading-relaxed">
-                {method === 'email'
-                  ? 'コードが届かない場合は、迷惑メールフォルダをご確認ください'
-                  : 'コードが届かない場合は、電話番号をご確認のうえもう一度お試しください'}
+                {sentTarget?.kind === 'phone'
+                  ? 'コードが届かない場合は、電話番号をご確認のうえもう一度お試しください'
+                  : 'コードが届かない場合は、迷惑メールフォルダをご確認ください'}
               </p>
             </div>
           </div>
