@@ -26,7 +26,7 @@ export function ShootingGuideOverlay({ open, onClose }: { open: boolean; onClose
           type="button"
           onClick={onClose}
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white"
-          style={{ backgroundColor: '#2563EB' }}
+          style={{ backgroundColor: 'var(--primary)' }}
         >
           <X className="w-3.5 h-3.5" />
           閉じる
@@ -50,7 +50,7 @@ export default function ShootingGuideButton() {
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen(true); }}
         className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 hover:opacity-80 active:scale-[0.97] flex-shrink-0"
-        style={{ borderColor: '#2563EB', color: '#2563EB', backgroundColor: '#DBEAFE' }}
+        style={{ borderColor: 'var(--primary)', color: 'var(--primary)', backgroundColor: 'var(--primary-tint)' }}
       >
         <ExternalLink className="w-3 h-3" />
         <span>撮影方法を確認する</span>

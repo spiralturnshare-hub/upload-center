@@ -28,6 +28,41 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 // ============================================================
+// OEM テナント別ブランディング(色 + ロゴ)
+//   docs/38(spiralturn-green-integration)/ Bacon_Brain「アップロードアプリのマルチテナント化」
+//   未ログインの HomePage/SignInPage からも呼べるよう、organizations テーブルを直接 SELECT せず
+//   anon 実行可の SECURITY DEFINER RPC(get_org_branding)経由にする(migration 036)。
+//   これにより anon が organizations の他の列(bank_*・stripe_connect_acct_id 等)へ触れない。
+// ============================================================
+export interface OrgBranding {
+  slug: string;
+  companyName: string | null;
+  brandColor: string | null;
+  companyLogo: string | null;
+  logoPosition: 'header' | 'footer' | 'both';
+}
+
+/** slug からブランド情報(色・ロゴ)を取得する。無効な slug や非公開な org は null。 */
+export async function fetchOrgBranding(slug: string): Promise<OrgBranding | null> {
+  if (!slug) return null;
+  const { data, error } = await supabase.rpc('get_org_branding', { p_slug: slug });
+  if (error) {
+    console.warn('[fetchOrgBranding] 取得失敗(自社デフォルト表示にフォールバック):', error.message);
+    return null;
+  }
+  // RPC は RETURNS TABLE なので配列で返る。0件 = slug 未登録/非active。
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+  return {
+    slug: row.slug,
+    companyName: row.company_name ?? null,
+    brandColor: row.brand_color ?? null,
+    companyLogo: row.company_logo ?? null,
+    logoPosition: (row.logo_position as OrgBranding['logoPosition']) ?? 'header',
+  };
+}
+
+// ============================================================
 // uploads テーブル操作
 // ============================================================
 export async function fetchUploadByOrderName(orderName: string) {

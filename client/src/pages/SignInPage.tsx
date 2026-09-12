@@ -188,9 +188,9 @@ export default function SignInPage() {
         <div className="flex flex-col items-center py-4">
           <div
             className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3"
-            style={{ backgroundColor: '#DBEAFE' }}
+            style={{ backgroundColor: 'var(--primary-tint)' }}
           >
-            <HeaderIcon className="w-8 h-8" style={{ color: '#2563EB' }} />
+            <HeaderIcon className="w-8 h-8" style={{ color: 'var(--primary)' }} />
           </div>
           {step === 'input' ? (
             <>
@@ -245,7 +245,7 @@ export default function SignInPage() {
                     borderColor: fieldError ? ERROR_BORDER : '#E5E7EB',
                     backgroundColor: fieldError ? ERROR_BG : 'white',
                   }}
-                  onFocus={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#2563EB')}
+                  onFocus={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : 'var(--primary)')}
                   onBlur={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#E5E7EB')}
                 />
               </div>
@@ -291,7 +291,7 @@ export default function SignInPage() {
                   borderColor: fieldError ? ERROR_BORDER : '#E5E7EB',
                   backgroundColor: fieldError ? ERROR_BG : 'white',
                 }}
-                onFocus={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#2563EB')}
+                onFocus={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : 'var(--primary)')}
                 onBlur={(e) => (e.target.style.borderColor = fieldError ? ERROR_BORDER : '#E5E7EB')}
                 autoFocus
               />

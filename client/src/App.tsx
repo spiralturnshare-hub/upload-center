@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { BrandProvider } from "./contexts/BrandContext";
 import { UploadProvider, useUpload } from "./contexts/UploadContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -27,7 +28,7 @@ import PaymentCompletePage from "./pages/PaymentCompletePage";
 
 // ============================================================
 // Design: ビビッド・フォーム
-// App: PANTONE Pink C (#2563EB) イメージカラー
+// App: テナントのブランドカラーがイメージカラー(既定 #2563EB。docs/38)
 // Single-page context-based navigation (no URL routing)
 // ============================================================
 
@@ -94,12 +95,14 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <UploadProvider>
-          <TooltipProvider>
-            <Toaster />
-            <AppRouter />
-          </TooltipProvider>
-        </UploadProvider>
+        <BrandProvider>
+          <UploadProvider>
+            <TooltipProvider>
+              <Toaster />
+              <AppRouter />
+            </TooltipProvider>
+          </UploadProvider>
+        </BrandProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

@@ -84,11 +84,11 @@ function EntryCard({ entry, index, canDelete, onChange, onDelete }: EntryCardPro
 
   return (
     <div className="bg-white rounded-2xl border-2 shadow-sm overflow-hidden"
-      style={{ borderColor: '#93C5FD' }}>
+      style={{ borderColor: 'var(--primary-soft)' }}>
       {/* Card header */}
       <div className="flex items-center justify-between px-4 py-3"
-        style={{ backgroundColor: '#DBEAFE' }}>
-        <span className="text-sm font-bold" style={{ color: '#2563EB' }}>
+        style={{ backgroundColor: 'var(--primary-tint)' }}>
+        <span className="text-sm font-bold" style={{ color: 'var(--primary)' }}>
           痛み {index + 1}
         </span>
         {canDelete && (
@@ -112,9 +112,9 @@ function EntryCard({ entry, index, canDelete, onChange, onDelete }: EntryCardPro
                 onClick={() => loc === 'その他' ? setShowCustomInput(true) : selectLocation(loc)}
                 className="h-10 rounded-xl text-xs font-medium border-2 transition-all duration-150 active:scale-[0.97]"
                 style={{
-                  borderColor: entry.locations.includes(loc) ? '#2563EB' : '#E5E7EB',
-                  backgroundColor: entry.locations.includes(loc) ? '#DBEAFE' : 'white',
-                  color: entry.locations.includes(loc) ? '#2563EB' : '#374151',
+                  borderColor: entry.locations.includes(loc) ? 'var(--primary)' : '#E5E7EB',
+                  backgroundColor: entry.locations.includes(loc) ? 'var(--primary-tint)' : 'white',
+                  color: entry.locations.includes(loc) ? 'var(--primary)' : '#374151',
                 }}>
                 {loc}
               </button>
@@ -127,7 +127,7 @@ function EntryCard({ entry, index, canDelete, onChange, onDelete }: EntryCardPro
                 onChange={e => setCustomLocation(e.target.value)}
                 placeholder="部位を入力"
                 className="flex-1 h-10 px-3 rounded-xl border border-gray-200 text-sm focus:outline-none"
-                onFocus={e => (e.target.style.borderColor = '#2563EB')}
+                onFocus={e => (e.target.style.borderColor = 'var(--primary)')}
                 onBlur={e => (e.target.style.borderColor = '#E5E7EB')} />
               <button onClick={() => {
                 if (customLocation.trim()) {
@@ -137,7 +137,7 @@ function EntryCard({ entry, index, canDelete, onChange, onDelete }: EntryCardPro
                 }
               }}
                 className="h-10 px-4 rounded-xl text-sm font-medium text-white active:scale-[0.97]"
-                style={{ backgroundColor: '#2563EB' }}>
+                style={{ backgroundColor: 'var(--primary)' }}>
                 決定
               </button>
             </div>
@@ -155,9 +155,9 @@ function EntryCard({ entry, index, canDelete, onChange, onDelete }: EntryCardPro
                 onClick={() => update({ side })}
                 className="h-11 rounded-xl text-sm font-medium border-2 transition-all duration-150 active:scale-[0.97]"
                 style={{
-                  borderColor: entry.side === side ? '#2563EB' : '#E5E7EB',
-                  backgroundColor: entry.side === side ? '#DBEAFE' : 'white',
-                  color: entry.side === side ? '#2563EB' : '#374151',
+                  borderColor: entry.side === side ? 'var(--primary)' : '#E5E7EB',
+                  backgroundColor: entry.side === side ? 'var(--primary-tint)' : 'white',
+                  color: entry.side === side ? 'var(--primary)' : '#374151',
                 }}>
                 {side}
               </button>
@@ -178,16 +178,16 @@ function EntryCard({ entry, index, canDelete, onChange, onDelete }: EntryCardPro
                 onClick={() => update({ faceScale: face.value })}
                 className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition-all duration-150 active:scale-[0.97]"
                 style={{
-                  borderColor: entry.faceScale === face.value ? '#2563EB' : '#E5E7EB',
-                  backgroundColor: entry.faceScale === face.value ? '#DBEAFE' : 'white',
+                  borderColor: entry.faceScale === face.value ? 'var(--primary)' : '#E5E7EB',
+                  backgroundColor: entry.faceScale === face.value ? 'var(--primary-tint)' : 'white',
                 }}>
                 <span className="text-5xl leading-none">{face.emoji}</span>
                 <span className="text-3xl font-bold leading-none"
-                  style={{ color: entry.faceScale === face.value ? '#2563EB' : '#374151' }}>
+                  style={{ color: entry.faceScale === face.value ? 'var(--primary)' : '#374151' }}>
                   {face.value}
                 </span>
                 <span className="text-sm leading-tight text-center"
-                  style={{ color: entry.faceScale === face.value ? '#2563EB' : '#6B7280' }}>
+                  style={{ color: entry.faceScale === face.value ? 'var(--primary)' : '#6B7280' }}>
                   {face.label}
                 </span>
               </button>
@@ -196,11 +196,11 @@ function EntryCard({ entry, index, canDelete, onChange, onDelete }: EntryCardPro
 
           {entry.faceScale !== null && (
             <div className="rounded-xl p-3 flex items-center gap-2"
-              style={{ backgroundColor: '#DBEAFE' }}>
+              style={{ backgroundColor: 'var(--primary-tint)' }}>
               <span className="text-xl">
                 {FACE_SCALE_DATA.find(f => f.value === entry.faceScale)?.emoji}
               </span>
-              <span className="text-xs font-semibold" style={{ color: '#2563EB' }}>
+              <span className="text-xs font-semibold" style={{ color: 'var(--primary)' }}>
                 {entry.faceScale}：{FACE_SCALE_DATA.find(f => f.value === entry.faceScale)?.label}
               </span>
             </div>
@@ -248,7 +248,7 @@ function EntryCard({ entry, index, canDelete, onChange, onDelete }: EntryCardPro
           <button
             onClick={() => fileInputRef.current?.click()}
             className="flex items-center gap-2 w-full h-14 rounded-xl border-2 border-dashed justify-center text-sm font-medium transition-all active:scale-[0.97]"
-            style={{ borderColor: '#2563EB', color: '#2563EB', backgroundColor: '#FDF0FA' }}>
+            style={{ borderColor: 'var(--primary)', color: 'var(--primary)', backgroundColor: '#FDF0FA' }}>
             <Camera className="w-5 h-5" />
             写真を追加（カメラ / ライブラリ）
           </button>
@@ -333,7 +333,7 @@ export default function Step4PainPage() {
         {/* Section header */}
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
-            style={{ backgroundColor: '#2563EB' }}>
+            style={{ backgroundColor: 'var(--primary)' }}>
             4
           </div>
           <h2 className="text-base font-bold text-gray-800">痛みに関する情報</h2>
@@ -351,9 +351,9 @@ export default function Step4PainPage() {
                 onClick={() => setHasPain(opt.value)}
                 className="h-14 rounded-xl text-sm font-semibold border-2 transition-all duration-150 active:scale-[0.97]"
                 style={{
-                  borderColor: painInfo.hasPain === opt.value ? '#2563EB' : '#E5E7EB',
-                  backgroundColor: painInfo.hasPain === opt.value ? '#DBEAFE' : 'white',
-                  color: painInfo.hasPain === opt.value ? '#2563EB' : '#374151',
+                  borderColor: painInfo.hasPain === opt.value ? 'var(--primary)' : '#E5E7EB',
+                  backgroundColor: painInfo.hasPain === opt.value ? 'var(--primary-tint)' : 'white',
+                  color: painInfo.hasPain === opt.value ? 'var(--primary)' : '#374151',
                 }}>
                 {opt.label}
               </button>
@@ -383,7 +383,7 @@ export default function Step4PainPage() {
               <button
                 onClick={addEntry}
                 className="flex items-center justify-center gap-2 w-full h-14 rounded-2xl border-2 border-dashed text-sm font-semibold transition-all active:scale-[0.97]"
-                style={{ borderColor: '#2563EB', color: '#2563EB', backgroundColor: '#FDF0FA' }}>
+                style={{ borderColor: 'var(--primary)', color: 'var(--primary)', backgroundColor: '#FDF0FA' }}>
                 <Plus className="w-5 h-5" />
                 ＋ 痛みを追加（{painInfo.entries.length}/{MAX_ENTRIES}）
               </button>

@@ -393,3 +393,10 @@ git push --force-with-lease       # リモートも戻す(要事前確認・複�
 - サインイン入力欄を1つに統合(`@`ならメール/電話番号なら SMS 自動判別)。`176d366` で push 済み。
 - `lib/supabase.ts`: `claimMyOrphanOrders()` 追加 + `fetchOrderDashboard` が起動時に呼ぶ + 注文照合を `user_id` 優先に変更。**要 Green 適用**: `spiralturn-green-integration/supabase/migrations/035_orphan_order_adoption.sql`(未適用)。ディーラー経由(`orders` 直接 INSERT・`user_id` null)の注文を電話/メールで本人へ引き取る RPC `claim_my_orphan_orders()` + `orders_select_by_phone` RLS。
 - `npx vite build` OK / `npx tsc --noEmit` は `Home.tsx` streamdown のみ。
+
+### CP9 (2026-09-12 OEM テナント別ブランディング: 色トークン化 + BrandContext。push前コミット `a96bf84`)
+- 詳細計画: `spiralturn-green-integration/docs/38-oem-tenant-branding-plan.md` / Bacon_Brain「アップロードアプリのマルチテナント化（OEMブランド分離）」。
+- **Phase 0**: 色368箇所(`#2563EB`系5色)を `var(--primary)` 等トークンへ機械置換。`index.css` に `color-mix()` で派生色を自動計算する4トークン追加。見た目は変更前と同一(リファクタのみ)。
+- **Phase 3**: `BrandContext` 新設。`?org=<slug>` クエリ(将来はサブドメイン)でテナント判定 → `get_org_branding` RPC(migration 036・Green適用・検証済み)で色/ロゴ取得 → `--primary` を上書き + `AppLayout`/`HomePage` にロゴ描画。**`?org=` 未指定時は従来どおり自社の見た目のまま(既存ユーザーへの影響ゼロ)**。
+- `npm run build` OK(2回確認)。`npx tsc --noEmit` は `Home.tsx` streamdown の既存エラーのみ(本変更起因のエラーなし)。
+- ロールバック: このコミットの前(`a96bf84`)に Vercel で「Promote to Production」。DB側(migration 036)はロールバック不要(追加のみ・anon開放は`get_org_branding`のみ)。

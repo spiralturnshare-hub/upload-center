@@ -62,6 +62,18 @@
   --primary-foreground: oklch(1 0 0);
   --sidebar-primary: oklch(0.56 0.27 264);
   --sidebar-primary-foreground: oklch(1 0 0);
+
+  /* ============================================================
+     2026-09-12: OEM テナント別ブランディングの土台(docs/38 Phase 0)。
+     --primary は「1色」だけを BrandContext が実行時に上書きする(dealer-mgmt-console の
+     brand_color)。派生色は手で4色分持たせず、color-mix() で --primary から自動計算する。
+     こうすると OEM が選ぶのは1色だけでよく、濃淡の破綻(手動指定ミス)が起きない。
+     ブラウザ対応: Chrome/Edge 111+, Safari 16.2+, Firefox 113+(このアプリの技術スタックで問題なし)。
+     ============================================================ */
+  --primary-dark: color-mix(in srgb, var(--primary) 80%, black);
+  --primary-light: color-mix(in srgb, var(--primary) 70%, white);
+  --primary-tint: color-mix(in srgb, var(--primary) 12%, white);
+  --primary-soft: color-mix(in srgb, var(--primary) 55%, white);
   --radius: 0.75rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.13 0.005 285);
@@ -181,22 +193,22 @@
 
   /* Upload area styles */
   .upload-zone {
-    border: 2px dashed oklch(0.56 0.27 264 / 40%);
+    border: 2px dashed color-mix(in srgb, var(--primary) 40%, transparent);
     transition: border-color 200ms ease, background-color 200ms ease;
   }
   .upload-zone:hover {
-    border-color: oklch(0.56 0.27 264);
-    background-color: oklch(0.97 0.03 264);
+    border-color: var(--primary);
+    background-color: var(--primary-tint);
   }
 
   /* Step indicator */
   .step-active {
-    background-color: oklch(0.56 0.27 264);
+    background-color: var(--primary);
     color: white;
   }
   .step-completed {
-    background-color: oklch(0.56 0.27 264 / 20%);
-    color: oklch(0.56 0.27 264);
+    background-color: color-mix(in srgb, var(--primary) 20%, transparent);
+    color: var(--primary);
   }
   .step-inactive {
     background-color: oklch(0.92 0.004 286);

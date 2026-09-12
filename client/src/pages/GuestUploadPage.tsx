@@ -180,7 +180,7 @@ export default function GuestUploadPage() {
             <Button
               onClick={handleNextFromQuestionnaire}
               className="w-full font-semibold"
-              style={{ backgroundColor: '#2563EB' }}
+              style={{ backgroundColor: 'var(--primary)' }}
             >
               次へ
             </Button>
@@ -202,7 +202,7 @@ export default function GuestUploadPage() {
               <Button
                 onClick={handleGoToPaymentId}
                 className="w-full font-semibold"
-                style={{ backgroundColor: '#2563EB' }}
+                style={{ backgroundColor: 'var(--primary)' }}
               >
                 決済完了IDでアップロード
               </Button>
@@ -256,7 +256,7 @@ export default function GuestUploadPage() {
             <Button
               onClick={handleNextFromInsoleSelect}
               className="w-full font-semibold"
-              style={{ backgroundColor: '#2563EB' }}
+              style={{ backgroundColor: 'var(--primary)' }}
             >
               次へ
             </Button>
@@ -310,7 +310,7 @@ export default function GuestUploadPage() {
               <Button
                 onClick={handleStartGuestUpload}
                 className="w-full font-semibold"
-                style={{ backgroundColor: '#2563EB' }}
+                style={{ backgroundColor: 'var(--primary)' }}
               >
                 アップロードを開始する
               </Button>

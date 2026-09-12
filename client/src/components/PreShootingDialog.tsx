@@ -10,7 +10,7 @@ const ERROR_BG = '#FFF7ED';
 // ============================================================
 // Design: ビビッド・フォーム
 // PreShootingDialog: アップロード開始前の事前撮影確認ダイアログ
-// Primary: PANTONE Pink C (#2563EB)
+// Primary: テナントのブランドカラー(既定 #2563EB。dealer-mgmt-console の brand_color で上書き・docs/38)
 //
 // 元のDartコード: confirm_dialog_take_photo_required
 // 撮影方法ガイドは ShootingGuideButton(アプリ内オーバーレイ)参照
@@ -74,7 +74,7 @@ export default function PreShootingDialog({ open, onClose, onConfirm }: PreShoot
             type="button"
             onClick={() => setShowGuide(true)}
             className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border-2 text-sm font-semibold transition-all duration-150 active:scale-[0.97] hover:opacity-80"
-            style={{ borderColor: '#2563EB', color: '#2563EB' }}
+            style={{ borderColor: 'var(--primary)', color: 'var(--primary)' }}
           >
             <Video className="w-4 h-4 flex-shrink-0" />
             <span>撮影方法を確認する</span>
@@ -92,8 +92,8 @@ export default function PreShootingDialog({ open, onClose, onConfirm }: PreShoot
             <div
               className="w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-all duration-150 mt-0.5"
               style={{
-                borderColor: checked ? '#2563EB' : checkError ? ERROR_BORDER : '#E5E7EB',
-                backgroundColor: checked ? '#2563EB' : 'transparent',
+                borderColor: checked ? 'var(--primary)' : checkError ? ERROR_BORDER : '#E5E7EB',
+                backgroundColor: checked ? 'var(--primary)' : 'transparent',
               }}
             >
               {checked && (

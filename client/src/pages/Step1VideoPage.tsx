@@ -158,7 +158,7 @@ export default function Step1VideoPage() {
         {/* Section header */}
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#2563EB' }}>
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: 'var(--primary)' }}>
               1
             </div>
             <h2 className="text-base font-bold text-gray-800">動画のアップロードを行います</h2>
@@ -263,13 +263,13 @@ function VideoUploadCard({
       >
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ backgroundColor: isUploaded ? '#DCFCE7' : showMissing ? '#FDE9CC' : '#DBEAFE' }}
+          style={{ backgroundColor: isUploaded ? '#DCFCE7' : showMissing ? '#FDE9CC' : 'var(--primary-tint)' }}
         >
           {isUploaded
             ? <CheckCircle2 className="w-4 h-4 text-green-500" />
             : showMissing
               ? <AlertTriangle className="w-4 h-4" style={{ color: '#E8890C' }} />
-              : <Video className="w-4 h-4" style={{ color: '#2563EB' }} />
+              : <Video className="w-4 h-4" style={{ color: 'var(--primary)' }} />
           }
         </div>
         <div className="flex-1 min-w-0">

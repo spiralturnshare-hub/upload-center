@@ -83,8 +83,8 @@ export default function UploadZone({
           relative rounded-2xl border-2 border-dashed p-6 text-center cursor-pointer
           transition-all duration-200
           ${isDragging
-            ? 'border-[#2563EB] bg-[#DBEAFE]'
-            : 'border-gray-200 bg-gray-50 hover:border-[#2563EB] hover:bg-[#DBEAFE]/50'
+            ? 'border-[var(--primary)] bg-[var(--primary-tint)]'
+            : 'border-gray-200 bg-gray-50 hover:border-[var(--primary)] hover:bg-[var(--primary-tint)]/50'
           }
         `}
       >
@@ -99,12 +99,12 @@ export default function UploadZone({
 
         {status === 'uploading' ? (
           <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-10 h-10 animate-spin" style={{ color: '#2563EB' }} />
+            <Loader2 className="w-10 h-10 animate-spin" style={{ color: 'var(--primary)' }} />
             <p className="text-sm font-medium text-gray-600">アップロード中...</p>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
                 className="h-2 rounded-full transition-all duration-300"
-                style={{ width: `${uploadProgress}%`, backgroundColor: '#2563EB' }}
+                style={{ width: `${uploadProgress}%`, backgroundColor: 'var(--primary)' }}
               />
             </div>
             <p className="text-xs text-gray-400">アップロードには時間がかかる場合があります</p>
@@ -124,9 +124,9 @@ export default function UploadZone({
           <div className="flex flex-col items-center gap-3">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center"
-              style={{ backgroundColor: '#DBEAFE' }}
+              style={{ backgroundColor: 'var(--primary-tint)' }}
             >
-              <Icon className="w-7 h-7" style={{ color: '#2563EB' }} />
+              <Icon className="w-7 h-7" style={{ color: 'var(--primary)' }} />
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-700">
@@ -151,9 +151,9 @@ export default function UploadZone({
             >
               <div
                 className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: '#DBEAFE' }}
+                style={{ backgroundColor: 'var(--primary-tint)' }}
               >
-                <Icon className="w-4 h-4" style={{ color: '#2563EB' }} />
+                <Icon className="w-4 h-4" style={{ color: 'var(--primary)' }} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-700 truncate">{file.name}</p>

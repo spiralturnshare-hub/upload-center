@@ -292,7 +292,7 @@ export default function Step2PhotoPage() {
         {/* Section header */}
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#2563EB' }}>
+            <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: 'var(--primary)' }}>
               2
             </div>
             <h2 className="text-base font-bold text-gray-800">画像のアップロードを行います</h2>
@@ -307,11 +307,11 @@ export default function Step2PhotoPage() {
           >
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: footDone ? '#DCFCE7' : '#DBEAFE' }}
+              style={{ backgroundColor: footDone ? '#DCFCE7' : 'var(--primary-tint)' }}
             >
               {footDone
                 ? <CheckCircle2 className="w-4 h-4 text-green-500" />
-                : <Footprints className="w-4 h-4" style={{ color: '#2563EB' }} />
+                : <Footprints className="w-4 h-4" style={{ color: 'var(--primary)' }} />
               }
             </div>
             <div className="flex-1 min-w-0">
@@ -329,7 +329,7 @@ export default function Step2PhotoPage() {
               type="button"
               onClick={launchFootGuidance}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold text-white transition-all duration-150 hover:opacity-90 active:scale-[0.98]"
-              style={{ backgroundColor: '#2563EB' }}
+              style={{ backgroundColor: 'var(--primary)' }}
             >
               <Camera className="w-4 h-4" />
               かんたん撮影アプリを起動
@@ -370,11 +370,11 @@ export default function Step2PhotoPage() {
               >
                 <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: done ? '#DCFCE7' : '#DBEAFE' }}
+                  style={{ backgroundColor: done ? '#DCFCE7' : 'var(--primary-tint)' }}
                 >
                   {done
                     ? <CheckCircle2 className="w-4 h-4 text-green-500" />
-                    : <Shirt className="w-4 h-4" style={{ color: '#2563EB' }} />
+                    : <Shirt className="w-4 h-4" style={{ color: 'var(--primary)' }} />
                   }
                 </div>
                 <div className="flex-1 min-w-0">
@@ -405,9 +405,9 @@ export default function Step2PhotoPage() {
         })}
 
         {/* Info */}
-        <div className="rounded-xl p-4 flex gap-3" style={{ backgroundColor: '#DBEAFE' }}>
-          <Info className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#2563EB' }} />
-          <p className="text-xs leading-relaxed" style={{ color: '#1D4ED8' }}>
+        <div className="rounded-xl p-4 flex gap-3" style={{ backgroundColor: 'var(--primary-tint)' }}>
+          <Info className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--primary)' }} />
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--primary-dark)' }}>
             ※ 中敷きが糊付けされ取り外しづらい場合は、ドライヤーで適度に温めてから取り外してください
           </p>
         </div>

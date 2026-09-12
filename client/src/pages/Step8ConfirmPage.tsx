@@ -56,14 +56,14 @@ function SectionCard({ icon, title, stepLabel, onEdit, children }: SectionCardPr
       {/* カードヘッダー */}
       <div
         className="flex items-center gap-2 px-4 py-3"
-        style={{ backgroundColor: '#DBEAFE' }}
+        style={{ backgroundColor: 'var(--primary-tint)' }}
       >
         {icon}
-        <h3 className="text-sm font-semibold flex-1" style={{ color: '#2563EB' }}>{title}</h3>
+        <h3 className="text-sm font-semibold flex-1" style={{ color: 'var(--primary)' }}>{title}</h3>
         <button
           onClick={onEdit}
           className="flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95"
-          style={{ backgroundColor: '#2563EB', color: 'white' }}
+          style={{ backgroundColor: 'var(--primary)', color: 'white' }}
         >
           <Edit3 className="w-3 h-3" />
           修正する
@@ -313,7 +313,7 @@ export default function Step8ConfirmPage() {
           <div className="flex items-center gap-2 mb-1">
             <div
               className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white"
-              style={{ backgroundColor: '#2563EB' }}
+              style={{ backgroundColor: 'var(--primary)' }}
             >
               8
             </div>
@@ -326,7 +326,7 @@ export default function Step8ConfirmPage() {
 
         {/* ─── STEP 1: 動画アップロード ─── */}
         <SectionCard
-          icon={<Video className="w-4 h-4" style={{ color: '#2563EB' }} />}
+          icon={<Video className="w-4 h-4" style={{ color: 'var(--primary)' }} />}
           title="STEP 1：動画アップロード"
           stepLabel="STEP 1 に戻る"
           onEdit={() => setCurrentPage('step1')}
@@ -374,7 +374,7 @@ export default function Step8ConfirmPage() {
 
         {/* ─── STEP 2: 写真アップロード ─── */}
         <SectionCard
-          icon={<Camera className="w-4 h-4" style={{ color: '#2563EB' }} />}
+          icon={<Camera className="w-4 h-4" style={{ color: 'var(--primary)' }} />}
           title="STEP 2：写真アップロード"
           stepLabel="STEP 2 に戻る"
           onEdit={() => setCurrentPage('step2')}
@@ -433,7 +433,7 @@ export default function Step8ConfirmPage() {
 
         {/* ─── STEP 3: 靴情報 ─── */}
         <SectionCard
-          icon={<Footprints className="w-4 h-4" style={{ color: '#2563EB' }} />}
+          icon={<Footprints className="w-4 h-4" style={{ color: 'var(--primary)' }} />}
           title="STEP 3：靴情報"
           stepLabel="STEP 3 に戻る"
           onEdit={() => setCurrentPage('step3')}
@@ -464,7 +464,7 @@ export default function Step8ConfirmPage() {
 
         {/* ─── STEP 4: 痛みに関する情報 ─── */}
         <SectionCard
-          icon={<Heart className="w-4 h-4" style={{ color: '#2563EB' }} />}
+          icon={<Heart className="w-4 h-4" style={{ color: 'var(--primary)' }} />}
           title="STEP 4：痛みに関する情報"
           stepLabel="STEP 4 に戻る"
           onEdit={() => setCurrentPage('step4')}
@@ -518,7 +518,7 @@ export default function Step8ConfirmPage() {
 
         {/* ─── STEP 5: 作製目的 ─── */}
         <SectionCard
-          icon={<Target className="w-4 h-4" style={{ color: '#2563EB' }} />}
+          icon={<Target className="w-4 h-4" style={{ color: 'var(--primary)' }} />}
           title="STEP 5：作製目的"
           stepLabel="STEP 5 に戻る"
           onEdit={() => setCurrentPage('step5')}
@@ -547,7 +547,7 @@ export default function Step8ConfirmPage() {
 
         {/* ─── STEP 6: タコ・魚の目 ─── */}
         <SectionCard
-          icon={<Leaf className="w-4 h-4" style={{ color: '#2563EB' }} />}
+          icon={<Leaf className="w-4 h-4" style={{ color: 'var(--primary)' }} />}
           title="STEP 6：タコ・魚の目の位置"
           stepLabel="STEP 6 に戻る"
           onEdit={() => setCurrentPage('step6')}
@@ -607,7 +607,7 @@ export default function Step8ConfirmPage() {
 
         {/* ─── STEP 7: お客様情報・配送先 ─── */}
         <SectionCard
-          icon={<User className="w-4 h-4" style={{ color: '#2563EB' }} />}
+          icon={<User className="w-4 h-4" style={{ color: 'var(--primary)' }} />}
           title="STEP 7：お客様情報・配送先"
           stepLabel="STEP 7 に戻る"
           onEdit={() => setCurrentPage('step7')}

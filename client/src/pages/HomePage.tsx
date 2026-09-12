@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Upload, Shield, LogOut, User, UserRound, ChevronRight, HelpCircle, X } from 'lucide-react';
 import { useUpload } from '@/contexts/UploadContext';
 import type { OrderListMode } from '@/contexts/UploadContext';
+import { useBrand } from '@/contexts/BrandContext';
 import { fetchOrderDashboard, supabase } from '@/lib/supabase';
 
 // ============================================================
 // Design: ビビッド・フォーム
 // HomePage: アップロードセンター ホーム画面
-// Primary: PANTONE Pink C (#2563EB)
+// Primary: テナントのブランドカラー(既定 #2563EB。dealer-mgmt-console の brand_color で上書き・docs/38)
 //
 // 2026-09-04 冨永社長指示で整理:
 //   ヘッダー = ロゴ(中央) / 「アップロードセンター」(中央) / アカウント情報 + サインアウト(小)
@@ -23,9 +24,9 @@ import { fetchOrderDashboard, supabase } from '@/lib/supabase';
 // OEM 各社も同じものを使うため、特定ロゴを出すと発行元が分からなくなる。
 // 代わりに「オーダーメイドインソール / アップロードセンター」の2段テキスト(同じフォント・同じサイズ)。
 
-const PINK = '#2563EB';
-const PINK_DARK = '#1D4ED8';
-const PINK_BG = '#DBEAFE';
+const PINK = 'var(--primary)';
+const PINK_DARK = 'var(--primary-dark)';
+const PINK_BG = 'var(--primary-tint)';
 // 中間トーン: 中断 / 完了 / 保証 の背景。白カード(その他のアップロード)との差をつける
 const BEIGE_BG = '#FAF6EE';
 const BEIGE_BORDER = '#ECE3D3';
@@ -52,6 +53,10 @@ const HELP_TEXT: Record<'id' | 'guest', { title: string; paragraphs: string[] }>
 export default function HomePage() {
   const { isLoggedIn, setIsLoggedIn, setCurrentPage, isProfileRegistered, setOrderListMode } = useUpload();
   const [help, setHelp] = useState<'id' | 'guest' | null>(null);
+  // OEM テナントのロゴ(docs/38)。brand が無ければ従来どおり2段テキストのみ。
+  const { brand } = useBrand();
+  const showHeaderLogo = brand?.companyLogo && (brand.logoPosition === 'header' || brand.logoPosition === 'both');
+  const showFooterLogo = brand?.companyLogo && (brand.logoPosition === 'footer' || brand.logoPosition === 'both');
 
   // 注文一覧の件数(決済済み注文 × アップロード状態の突合)
   const [counts, setCounts] = useState<{ needing: number; inProgress: number; completed: number } | null>(null);
@@ -97,11 +102,19 @@ export default function HomePage() {
         )}
 
         <div className="flex flex-col items-center gap-2.5 px-4 pt-6 pb-4">
-          {/* ロゴ画像は出さない(OEM 各社共用のため)。2段テキストは同フォント・同サイズ */}
-          <div className="flex flex-col items-center leading-snug">
-            <span className="text-base font-bold text-gray-800 tracking-wide">オーダーメイドインソール</span>
-            <span className="text-base font-bold text-gray-800 tracking-wide">アップロードセンター</span>
-          </div>
+          {/* OEM のロゴがあれば出す(docs/38)。無ければ従来どおり自社共用の2段テキスト */}
+          {showHeaderLogo ? (
+            <img
+              src={brand!.companyLogo!}
+              alt={brand?.companyName ?? 'ブランドロゴ'}
+              className="h-9 max-w-[200px] object-contain"
+            />
+          ) : (
+            <div className="flex flex-col items-center leading-snug">
+              <span className="text-base font-bold text-gray-800 tracking-wide">オーダーメイドインソール</span>
+              <span className="text-base font-bold text-gray-800 tracking-wide">アップロードセンター</span>
+            </div>
+          )}
 
           {isLoggedIn ? (
             <button
@@ -267,6 +280,17 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+
+        {/* OEM ブランドフッター(logo_position=footer/both のときのみ・docs/38) */}
+        {showFooterLogo && (
+          <div className="flex justify-center pt-4">
+            <img
+              src={brand!.companyLogo!}
+              alt={brand?.companyName ?? 'ブランドロゴ'}
+              className="h-8 max-w-[160px] object-contain opacity-90"
+            />
+          </div>
+        )}
 
       </main>
 

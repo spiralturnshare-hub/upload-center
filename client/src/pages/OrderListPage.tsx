@@ -13,7 +13,7 @@ import {
 } from '@/lib/supabase';
 import { toast } from 'sonner';
 
-const PINK = '#2563EB';
+const PINK = 'var(--primary)';
 
 // ============================================================
 // OrderListPage: ホーム「注文一覧」から開く3種のリスト

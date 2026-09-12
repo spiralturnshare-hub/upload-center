@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react';
 
 // ============================================================
 // Design: ビビッド・フォーム
-// PinkButton: PANTONE Pink C (#2563EB) ブランドボタン
+// PinkButton: テナントのブランドカラーで着色されるボタン(既定 #2563EB。docs/38)
 // ============================================================
 
 interface PinkButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -40,28 +40,28 @@ export default function PinkButton({
   const variantStyles = {
     primary: `
       text-white shadow-sm
-      focus-visible:ring-[#2563EB]
+      focus-visible:ring-[var(--primary)]
     `,
     outline: `
       border-2 bg-transparent
-      focus-visible:ring-[#2563EB]
+      focus-visible:ring-[var(--primary)]
     `,
     ghost: `
       bg-transparent
-      focus-visible:ring-[#2563EB]
+      focus-visible:ring-[var(--primary)]
     `,
   };
 
   const variantInlineStyles = {
     primary: {
-      background: disabled ? '#93C5FD' : 'linear-gradient(135deg, #2563EB, #1D4ED8)',
+      background: disabled ? 'var(--primary-soft)' : 'linear-gradient(135deg, var(--primary), var(--primary-dark))',
     },
     outline: {
-      borderColor: '#2563EB',
-      color: '#2563EB',
+      borderColor: 'var(--primary)',
+      color: 'var(--primary)',
     },
     ghost: {
-      color: '#2563EB',
+      color: 'var(--primary)',
     },
   };
 

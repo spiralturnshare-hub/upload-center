@@ -32,7 +32,7 @@ import { kindLabel } from '@/lib/kindLabels';
 import { INSOLE_DISPLAY_NAMES } from '@/lib/insoleConfig';
 import type { InsoleKind } from '@/lib/insoleConfig';
 
-const PINK = '#2563EB';
+const PINK = 'var(--primary)';
 const inputClass = 'w-full h-11 px-3 rounded-xl border-2 border-gray-200 text-sm focus:outline-none transition-colors';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

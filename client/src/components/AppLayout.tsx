@@ -1,6 +1,7 @@
 import React, { useRef, useImperativeHandle, forwardRef, useEffect } from 'react';
 import { ChevronLeft, User } from 'lucide-react';
 import { useUpload } from '@/contexts/UploadContext';
+import { useBrand } from '@/contexts/BrandContext';
 import { INSOLE_DISPLAY_NAMES } from '@/lib/insoleConfig';
 
 export interface AppLayoutHandle {
@@ -10,7 +11,7 @@ export interface AppLayoutHandle {
 // ============================================================
 // Design: ビビッド・フォーム
 // AppLayout: モバイルファーストのウィザードレイアウト
-// Primary: PANTONE Pink C (#2563EB)
+// Primary: テナントのブランドカラー(既定 #2563EB。dealer-mgmt-console の brand_color で上書き・docs/38)
 //
 // 顧客情報バー: ステップ画面の上部に顧客氏名＋インソール種別を常時表示
 // 代行スタッフが「誰の・何のインソール」かを常に把握できるようにする
@@ -48,6 +49,10 @@ const AppLayout = forwardRef<AppLayoutHandle, AppLayoutProps>(function AppLayout
   const progress = currentStep ? (currentStep / totalSteps) * 100 : 0;
   const { uploadData, currentPage } = useUpload();
   const { customerInfo, selectedInsoles } = uploadData;
+  // OEM テナントのロゴ(docs/38)。brand が無い(自社/解決前)なら常に null = 見た目は現状のまま。
+  const { brand } = useBrand();
+  const showHeaderLogo = brand?.companyLogo && (brand.logoPosition === 'header' || brand.logoPosition === 'both');
+  const showFooterLogo = brand?.companyLogo && (brand.logoPosition === 'footer' || brand.logoPosition === 'both');
 
   // ページ（currentPage）が切り替わるたびにmain要素を最上部にスクロール
   useEffect(() => {
@@ -76,6 +81,13 @@ const AppLayout = forwardRef<AppLayoutHandle, AppLayoutProps>(function AppLayout
               <ChevronLeft className="w-5 h-5 text-gray-600" />
             </button>
           )}
+          {showHeaderLogo && (
+            <img
+              src={brand!.companyLogo!}
+              alt={brand?.companyName ?? 'ブランドロゴ'}
+              className="h-7 max-w-[120px] object-contain shrink-0"
+            />
+          )}
           {title && (
             <h1 className="flex-1 text-center text-base font-semibold text-gray-800 truncate px-2">
               {title}
@@ -94,7 +106,7 @@ const AppLayout = forwardRef<AppLayoutHandle, AppLayoutProps>(function AppLayout
               className="absolute inset-y-0 left-0 transition-all duration-500 ease-out"
               style={{
                 width: `${progress}%`,
-                background: 'linear-gradient(90deg, #2563EB, #3B82F6)',
+                background: 'linear-gradient(90deg, var(--primary), var(--primary-light))',
               }}
             />
           </div>
@@ -105,11 +117,11 @@ const AppLayout = forwardRef<AppLayoutHandle, AppLayoutProps>(function AppLayout
       {currentStep !== undefined && (
         <div
           className="sticky top-[57px] z-10 px-4 py-2 flex items-center gap-2 border-b"
-          style={{ backgroundColor: '#DBEAFE', borderColor: '#93C5FD' }}
+          style={{ backgroundColor: 'var(--primary-tint)', borderColor: 'var(--primary-soft)' }}
         >
           <div
             className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ backgroundColor: '#2563EB' }}
+            style={{ backgroundColor: 'var(--primary)' }}
           >
             <User className="w-3.5 h-3.5 text-white" />
           </div>
@@ -144,7 +156,7 @@ const AppLayout = forwardRef<AppLayoutHandle, AppLayoutProps>(function AppLayout
                 style={{
                   backgroundColor:
                     i + 1 <= currentStep
-                      ? '#2563EB'
+                      ? 'var(--primary)'
                       : '#E5E7EB',
                   opacity: i + 1 <= currentStep ? 1 : 0.4,
                   transform: i + 1 === currentStep ? 'scale(1.3)' : 'scale(1)',
@@ -159,6 +171,17 @@ const AppLayout = forwardRef<AppLayoutHandle, AppLayoutProps>(function AppLayout
       <main ref={mainRef} data-scroll-container className="flex-1 overflow-y-auto">
         <div className="px-4 py-5 pb-32">
           {children}
+          {/* OEM ブランドフッター(logo_position=footer/both のときのみ)。
+              固定フッターではなくコンテンツ末尾に表示する軽量版(docs/38 の今回スコープ) */}
+          {showFooterLogo && (
+            <div className="flex justify-center pt-6">
+              <img
+                src={brand!.companyLogo!}
+                alt={brand?.companyName ?? 'ブランドロゴ'}
+                className="h-8 max-w-[160px] object-contain opacity-90"
+              />
+            </div>
+          )}
         </div>
       </main>
 

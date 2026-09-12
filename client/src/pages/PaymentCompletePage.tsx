@@ -12,7 +12,7 @@ import { useUpload } from '@/contexts/UploadContext';
 import PinkButton from '@/components/PinkButton';
 import { CheckCircle2, XCircle } from 'lucide-react';
 
-const PINK = '#2563EB';
+const PINK = 'var(--primary)';
 
 export default function PaymentCompletePage({ status }: { status: 'success' | 'canceled' }) {
   const { setCurrentPage } = useUpload();
